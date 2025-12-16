@@ -13,19 +13,16 @@ import authRoutes from './../routes/auth.routes.js';
 import usersRoutes from './../routes/users.routes.js';
 import quizRoutes from './../routes/quiz.routes.js';
 import roadmapRoutes from './../routes/roadmap.routes.js';
+import { checkApiKey } from '../middleware/middlewares.js';
 
 // Error handlers
 import { globalErrorHandler, notFoundHandler } from '../lib/errorHandlers.js';
-
 dotenv.config();
 
 const app = express();
 
-app.use(cors({
-    origin: `${process.env.CLIENT_URL}`,
-    methods: ['GET', 'POST', "PUT", "DELETE"],
-    credentials: true,
-}))
+
+app.use(cors({ origin: true, credentials: true }))
 app.use(helmet());
 
 // Rate limiting: limit repeated requests to API
@@ -41,6 +38,9 @@ app.use(express.json());
 
 // Parse cookies
 app.use(cookieParser());
+
+// Check API key middleware
+app.use(checkApiKey);
 
 //routes
 app.use('/api/v1/auth', authRoutes);
