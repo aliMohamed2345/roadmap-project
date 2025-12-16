@@ -20,6 +20,7 @@ import { globalErrorHandler, notFoundHandler } from '../lib/errorHandlers.js';
 dotenv.config();
 
 const app = express();
+const port = process.env.PORT || 3000
 
 app.use(cors({ origin: true, credentials: true }))
 app.use(helmet());
@@ -58,5 +59,8 @@ globalErrorHandler(app);
 //database connection 
 connectToDB();
 
+app.listen(port, () => {
+    console.log(`Server is running on port ${port}`);
+});
 
 export default app;
