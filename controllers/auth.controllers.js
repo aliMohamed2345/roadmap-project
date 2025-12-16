@@ -4,6 +4,42 @@ import bcrypt from "bcryptjs"
 import env from 'dotenv'
 import generateToken from "../utils/generateToken.js"
 env.config();
+
+/**
+ * @swagger
+ * /api/v1/auth/login:
+ *   post:
+ *     summary: User login
+ *     tags: [Auth]
+ *     parameters:
+ *       - in: query
+ *         name: key
+ *         required: true
+ *         description: API key required to access this endpoint
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [email, password]
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 example: user@email.com
+ *               password:
+ *                 type: string
+ *                 example: Password123!
+ *     responses:
+ *       200:
+ *         description: Login successful
+ *       400:
+ *         description: Invalid credentials
+ *       404:
+ *         description: User not found
+ */
 export const Login = async (req, res) => {
     try {
         const { email, password } = req.body
@@ -34,6 +70,43 @@ export const Login = async (req, res) => {
         return res.status(500).json({ success: false, message: error.message })
     }
 }
+
+/**
+ * @swagger
+ * /api/v1/auth/signup:
+ *   post:
+ *     summary: Register new user
+ *     tags: [Auth]
+ *     parameters:
+ *       - in: query
+ *         name: key
+ *         required: true
+ *         description: API key required to access this endpoint
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [username, email, password]
+ *             properties:
+ *               username:
+ *                 type: string
+ *                 example: ali123
+ *               email:
+ *                 type: string
+ *                 example: ali@email.com
+ *               password:
+ *                 type: string
+ *                 example: Password123!
+ *     responses:
+ *       201:
+ *         description: User created successfully
+ *       400:
+ *         description: Validation error
+ */
 export const SignUp = async (req, res) => {
     try {
         const { username, email, password } = req.body
@@ -66,6 +139,24 @@ export const SignUp = async (req, res) => {
     }
 
 }
+
+/**
+ * @swagger
+ * /api/v1/auth/logout:
+ *   post:
+ *     summary: Logout user
+ *     tags: [Auth]
+ *     parameters:
+ *       - in: query
+ *         name: key
+ *         required: true
+ *         description: API key required to access this endpoint
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Logout successful
+ */
 export const Logout = (req, res) => {
     try {
         res.clearCookie('token')

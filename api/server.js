@@ -4,6 +4,8 @@ import cookieParser from 'cookie-parser';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import cors from 'cors'
+import swaggerUi from "swagger-ui-express";
+import { swaggerSpec } from "../lib/swagger.js";
 
 // Database
 import connectToDB from '../lib/db.js';
@@ -38,6 +40,8 @@ app.use(express.json());
 
 // Parse cookies
 app.use(cookieParser());
+//add api documentation using swagger
+app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 // Check API key middleware
 app.use(checkApiKey);

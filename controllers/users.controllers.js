@@ -2,7 +2,30 @@ import User from "../models/user.model.js"
 import { validateChangeProfileCredentials } from "../utils/validateUserCredentials.js"
 import bcrypt from "bcryptjs"
 import cloudinary from "../lib/cloudinary.js";
-import fs from "fs";
+
+/**
+ * @swagger
+ * /api/v1/users/profile:
+ *   get:
+ *     summary: Get logged-in user profile
+ *     tags: [Users]
+ *     parameters:
+ *       - in: query
+ *         name: key
+ *         required: true
+ *         description: API key required to access this endpoint
+ *         schema:
+ *           type: string
+ *     security:
+ *       - CookieAuth: []
+ *     responses:
+ *       200:
+ *         description: User profile data
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Invalid API key
+ */
 export const Profile = async (req, res) => {
 
     try {
@@ -19,6 +42,42 @@ export const Profile = async (req, res) => {
         return res.status(500).json({ success: false, message: error.message })
     }
 }
+
+/**
+ * @swagger
+ * /api/v1/users/profile:
+ *   put:
+ *     summary: Update user profile
+ *     tags: [Users]
+ *     parameters:
+ *       - in: query
+ *         name: key
+ *         required: true
+ *         description: API key required to access this endpoint
+ *         schema:
+ *           type: string
+ *     security:
+ *       - CookieAuth: []
+ *     requestBody:
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               username:
+ *                 type: string
+ *               email:
+ *                 type: string
+ *               imageURL:
+ *                 type: string
+ *               bio:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Profile updated successfully
+ *       403:
+ *         description: Invalid API key
+ */
 export const updateProfile = async (req, res) => {
     try {
         const { id: userId } = req.user;
@@ -43,6 +102,41 @@ export const updateProfile = async (req, res) => {
     }
 }
 
+/**
+ * @swagger
+ * /api/v1/users/change-password:
+ *   put:
+ *     summary: Change user password
+ *     tags: [Users]
+ *     parameters:
+ *       - in: query
+ *         name: key
+ *         required: true
+ *         description: API key required to access this endpoint
+ *         schema:
+ *           type: string
+ *     security:
+ *       - CookieAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [currentPassword, password, confirmPassword]
+ *             properties:
+ *               currentPassword:
+ *                 type: string
+ *               password:
+ *                 type: string
+ *               confirmPassword:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Password changed successfully
+ *       403:
+ *         description: Invalid API key
+ */
 export const changePassword = async (req, res) => {
     try {
         const { id: userId } = req.user;
@@ -101,6 +195,35 @@ export const changePassword = async (req, res) => {
     }
 };
 
+/**
+ * @swagger
+ * /api/v1/users:
+ *   get:
+ *     summary: Get all users (Admin)
+ *     tags: [Users]
+ *     parameters:
+ *       - in: query
+ *         name: key
+ *         required: true
+ *         description: API key required to access this endpoint
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: q
+ *         schema:
+ *           type: string
+ *         description: Search by email or username
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: number
+ *         description: Page number for pagination
+ *     responses:
+ *       200:
+ *         description: List of users
+ *       403:
+ *         description: Invalid API key
+ */
 export const getAllUsers = async (req, res) => {
     try {
         const { q, page = 1, isAdmin } = req.query;
@@ -145,6 +268,33 @@ export const getAllUsers = async (req, res) => {
     }
 };
 
+/**
+ * @swagger
+ * /api/v1/users/{id}:
+ *   get:
+ *     summary: Get specific user by ID
+ *     tags: [Users]
+ *     parameters:
+ *       - in: query
+ *         name: key
+ *         required: true
+ *         description: API key required to access this endpoint
+ *         schema:
+ *           type: string
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: User ID
+ *     responses:
+ *       200:
+ *         description: User fetched successfully
+ *       404:
+ *         description: User not found
+ *       403:
+ *         description: Invalid API key
+ */
 export const getSpecificUser = async (req, res) => {
     try {
         const { id } = req.params
@@ -156,6 +306,33 @@ export const getSpecificUser = async (req, res) => {
     }
 }
 
+/**
+ * @swagger
+ * /api/v1/users/{id}/role:
+ *   patch:
+ *     summary: Toggle user role
+ *     tags: [Users]
+ *     parameters:
+ *       - in: query
+ *         name: key
+ *         required: true
+ *         description: API key required to access this endpoint
+ *         schema:
+ *           type: string
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: User ID
+ *     responses:
+ *       200:
+ *         description: Role updated successfully
+ *       404:
+ *         description: User not found
+ *       403:
+ *         description: Invalid API key
+ */
 export const toggleRole = async (req, res) => {
     try {
         const { id: userId } = req.params;
@@ -178,6 +355,26 @@ export const toggleRole = async (req, res) => {
         return res.status(500).json({ success: false, message: error.message });
     }
 };
+
+/**
+ * @swagger
+ * /api/v1/users:
+ *   delete:
+ *     summary: Delete logged-in user
+ *     tags: [Users]
+ *     parameters:
+ *       - in: query
+ *         name: key
+ *         required: true
+ *         description: API key required to access this endpoint
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: User deleted successfully
+ *       403:
+ *         description: Invalid API key
+ */
 export const deleteUser = async (req, res) => {
     try {
         const { id: userId } = req.user
@@ -189,6 +386,36 @@ export const deleteUser = async (req, res) => {
     }
 }
 
+/**
+ * @swagger
+ * /api/v1/users/upload-image:
+ *   post:
+ *     summary: Upload profile image
+ *     tags: [Users]
+ *     parameters:
+ *       - in: query
+ *         name: key
+ *         required: true
+ *         description: API key required to access this endpoint
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               image:
+ *                 type: string
+ *                 format: binary
+ *     responses:
+ *       200:
+ *         description: Image uploaded successfully
+ *       400:
+ *         description: No file uploaded
+ *       403:
+ *         description: Invalid API key
+ */
 export const uploadProfileImage = async (req, res) => {
     try {
         if (!req.file) return res.status(400).json({ success: false, message: "No file uploaded" });

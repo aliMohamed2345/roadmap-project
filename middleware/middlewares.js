@@ -37,7 +37,25 @@ export const isIdValid = (req, res, next) => {
     if (!mongoose.Types.ObjectId.isValid(id)) return res.status(400).json({ success: false, message: 'Invalid Id' });
     next()
 }
-
+/**
+ * @swagger
+ * /your-endpoint:
+ *   get:
+ *     summary: Example endpoint that requires an API key
+ *     description: This endpoint requires a valid API key as a query parameter.
+ *     parameters:
+ *       - in: query
+ *         name: key
+ *         required: true
+ *         description: API key required to access this endpoint
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Success
+ *       401:
+ *         description: Unauthorized: missing or invalid API key
+ */
 export const checkApiKey = (req, res, next) => {
     try {
         const { key } = req.query;

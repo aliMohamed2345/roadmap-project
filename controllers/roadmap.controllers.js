@@ -5,6 +5,23 @@ import User from '../models/user.model.js'
 import { validateResourceData, validateRoadmapData, validateSectionData } from '../utils/validateRoadmapData.js'
 import mongoose from 'mongoose'
 
+/**
+ * @swagger
+ * /api/v1/roadmap:
+ *   get:
+ *     summary: Get all roadmaps
+ *     tags: [Roadmaps]
+ *     parameters:
+ *       - in: query
+ *         name: key
+ *         required: true
+ *         description: API key required to access this endpoint
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: List of roadmaps
+ */
 export const getAllRoadmapData = async (req, res) => {
     try {
         const roadmap = await Roadmap.find().select('-section')
@@ -18,6 +35,26 @@ export const getAllRoadmapData = async (req, res) => {
     }
 }
 
+/**
+ * @swagger
+ * /api/v1/roadmap/{id}/progress:
+ *   get:
+ *     summary: Get user progress for a roadmap
+ *     tags: [Roadmaps]
+ *     parameters:
+ *       - in: query
+ *         name: key
+ *         required: true
+ *         description: API key required to access this endpoint
+ *         schema:
+ *           type: string
+ *       - in: path
+ *         name: id
+ *         required: true
+ *     responses:
+ *       200:
+ *         description: Roadmap progress fetched
+ */
 export const getUserRoadmapProgress = async (req, res) => {
     try {
         const { id: userId } = req.user
@@ -83,6 +120,26 @@ export const getUserRoadmapProgress = async (req, res) => {
     }
 };
 
+/**
+ * @swagger
+ * /api/v1/roadmap/{id}/sections:
+ *   get:
+ *     summary: Get all sections of a roadmap
+ *     tags: [Sections]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *       - in: query
+ *         name: key
+ *         required: true
+ *         description: API key required
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Sections fetched successfully
+ */
 export const getAllRoadmapSections = async (req, res) => {
     try {
         const { id: roadmapId } = req.params;
@@ -99,6 +156,28 @@ export const getAllRoadmapSections = async (req, res) => {
     }
 }
 
+/**
+ * @swagger
+ * /api/v1/roadmap/{id}:
+ *   get:
+ *     summary: Get specific roadmap
+ *     tags: [Roadmaps]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *       - in: query
+ *         name: key
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: API key required
+ *     responses:
+ *       200:
+ *         description: Roadmap fetched
+ *       404:
+ *         description: Roadmap not found
+ */
 export const getSpecificRoadmap = async (req, res) => {
     try {
         const { id } = req.params
@@ -113,6 +192,35 @@ export const getSpecificRoadmap = async (req, res) => {
         return res.status(500).json({ success: false, message: error.message })
     }
 }
+
+/**
+ * @swagger
+ * /api/v1/roadmap:
+ *   post:
+ *     summary: Create roadmap
+ *     tags: [Roadmaps]
+ *     parameters:
+ *       - in: query
+ *         name: key
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: API key required
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             required: [title, description]
+ *             properties:
+ *               title:
+ *                 type: string
+ *               description:
+ *                 type: string
+ *     responses:
+ *       201:
+ *         description: Roadmap created
+ */
 export const createRoadmap = async (req, res) => {
     try {
         const { title, description } = req.body
@@ -129,6 +237,35 @@ export const createRoadmap = async (req, res) => {
     }
 }
 
+/**
+ * @swagger
+ * /api/v1/roadmap/{id}:
+ *   put:
+ *     summary: Update roadmap
+ *     tags: [Roadmaps]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *       - in: query
+ *         name: key
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: API key required
+ *     requestBody:
+ *       content:
+ *         application/json:
+ *           schema:
+ *             properties:
+ *               title:
+ *                 type: string
+ *               description:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Roadmap updated
+ */
 export const updateRoadmap = async (req, res) => {
     try {
         const { id } = req.params
@@ -149,6 +286,26 @@ export const updateRoadmap = async (req, res) => {
     }
 }
 
+/**
+ * @swagger
+ * /api/v1/roadmap/{id}:
+ *   delete:
+ *     summary: Delete roadmap
+ *     tags: [Roadmaps]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *       - in: query
+ *         name: key
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: API key required
+ *     responses:
+ *       200:
+ *         description: Roadmap deleted
+ */
 export const deleteRoadmap = async (req, res) => {
     try {
         const { id } = req.params;
@@ -194,7 +351,39 @@ export const deleteRoadmap = async (req, res) => {
     }
 };
 
-
+/**
+ * @swagger
+ * /api/v1/roadmap/{id}/sections:
+ *   post:
+ *     summary: Create section
+ *     tags: [Sections]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *       - in: query
+ *         name: key
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: API key required
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             required: [title, description, difficulty]
+ *             properties:
+ *               title:
+ *                 type: string
+ *               description:
+ *                 type: string
+ *               difficulty:
+ *                 type: string
+ *     responses:
+ *       201:
+ *         description: Section created
+ */
 export const createSection = async (req, res) => {
     try {
         const { id } = req.params;
@@ -224,6 +413,26 @@ export const createSection = async (req, res) => {
     }
 }
 
+/**
+ * @swagger
+ * /api/v1/sections/{sectionId}:
+ *   get:
+ *     summary: Get section data
+ *     tags: [Sections]
+ *     parameters:
+ *       - in: path
+ *         name: sectionId
+ *         required: true
+ *       - in: query
+ *         name: key
+ *         required: true
+ *         description: API key required
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Section fetched
+ */
 export const getSectionData = async (req, res) => {
     try {
         const { sectionId } = req.params;
@@ -242,6 +451,26 @@ export const getSectionData = async (req, res) => {
     }
 }
 
+/**
+ * @swagger
+ * /api/v1/sections/{sectionId}:
+ *   put:
+ *     summary: Update section
+ *     tags: [Sections]
+ *     parameters:
+ *       - in: path
+ *         name: sectionId
+ *         required: true
+ *       - in: query
+ *         name: key
+ *         required: true
+ *         description: API key required
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Section updated successfully
+ */
 export const updateSection = async (req, res) => {
     try {
         const { sectionId } = req.params;
@@ -264,7 +493,26 @@ export const updateSection = async (req, res) => {
     }
 }
 
-
+/**
+ * @swagger
+ * /api/v1/sections/{sectionId}:
+ *   delete:
+ *     summary: Delete section
+ *     tags: [Sections]
+ *     parameters:
+ *       - in: path
+ *         name: sectionId
+ *         required: true
+ *       - in: query
+ *         name: key
+ *         required: true
+ *         description: API key required
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Section deleted
+ */
 export const deleteSection = async (req, res) => {
     try {
         const { sectionId } = req.params;
@@ -300,6 +548,26 @@ export const deleteSection = async (req, res) => {
     }
 };
 
+/**
+ * @swagger
+ * /api/v1/sections/{sectionId}/toggle:
+ *   patch:
+ *     summary: Toggle section completion
+ *     tags: [Sections]
+ *     parameters:
+ *       - in: path
+ *         name: sectionId
+ *         required: true
+ *       - in: query
+ *         name: key
+ *         required: true
+ *         description: API key required
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Completion toggled
+ */
 export const toggleCompletionSection = async (req, res) => {
     try {
         const { sectionId } = req.params;
@@ -370,6 +638,39 @@ export const toggleCompletionSection = async (req, res) => {
     }
 };
 
+/**
+ * @swagger
+ * /api/v1/sections/{sectionId}/resources:
+ *   post:
+ *     summary: Create resource
+ *     tags: [Resources]
+ *     parameters:
+ *       - in: path
+ *         name: sectionId
+ *         required: true
+ *       - in: query
+ *         name: key
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: API key required
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             required: [url, title, type]
+ *             properties:
+ *               url:
+ *                 type: string
+ *               title:
+ *                 type: string
+ *               type:
+ *                 type: string
+ *     responses:
+ *       201:
+ *         description: Resource created
+ */
 export const createResource = async (req, res) => {
     try {
         const { sectionId } = req.params
@@ -384,7 +685,7 @@ export const createResource = async (req, res) => {
 
         const resource = await Resource.create({ url, title, type, sectionId });
 
-        await Section.findByIdAndUpdate(sectionId, { $push : { resources: resource._id } }, { new: true });
+        await Section.findByIdAndUpdate(sectionId, { $push: { resources: resource._id } }, { new: true });
         return res.status(201).json({ success: true, message: "Resource created successfully", resource });
 
     } catch (error) {
@@ -393,6 +694,29 @@ export const createResource = async (req, res) => {
     }
 }
 
+/**
+ * @swagger
+ * /api/v1/sections/{sectionId}/resources:
+ *   get:
+ *     summary: Get all resources for a section
+ *     tags: [Resources]
+ *     parameters:
+ *       - in: path
+ *         name: sectionId
+ *         required: true
+ *         description: ID of the section
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: key
+ *         required: true
+ *         description: API key required to access this endpoint
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Resources fetched
+ */
 export const getAllSectionResources = async (req, res) => {
     try {
         const { sectionId } = req.params;
@@ -410,6 +734,26 @@ export const getAllSectionResources = async (req, res) => {
     }
 }
 
+/**
+ * @swagger
+ * /api/v1/resources/{resourceId}:
+ *   put:
+ *     summary: Update resource
+ *     tags: [Resources]
+ *     parameters:
+ *       - in: path
+ *         name: resourceId
+ *         required: true
+ *       - in: query
+ *         name: key
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: API key required
+ *     responses:
+ *       200:
+ *         description: Resource updated successfully
+ */
 export const updateResource = async (req, res) => {
     try {
         const { url, title, type } = req.body
@@ -432,6 +776,30 @@ export const updateResource = async (req, res) => {
         return res.status(500).json({ success: false, message: error.message });
     }
 }
+
+/**
+ * @swagger
+ * /api/v1/resources/{resourceId}:
+ *   get:
+ *     summary: Get resource by ID
+ *     tags: [Resources]
+ *     parameters:
+ *       - in: path
+ *         name: resourceId
+ *         required: true
+ *         description: ID of the resource
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: key
+ *         required: true
+ *         description: API key required to access this endpoint
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Resource fetched
+ */
 export const getSpecificResource = async (req, res) => {
     try {
         const { resourceId } = req.params
@@ -450,6 +818,26 @@ export const getSpecificResource = async (req, res) => {
     }
 }
 
+/**
+ * @swagger
+ * /api/v1/resources/{resourceId}:
+ *   delete:
+ *     summary: Delete resource
+ *     tags: [Resources]
+ *     parameters:
+ *       - in: path
+ *         name: resourceId
+ *         required: true
+ *       - in: query
+ *         name: key
+ *         required: true
+ *         description: API key required
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Resource deleted successfully
+ */
 export const deleteResource = async (req, res) => {
     try {
         const { resourceId } = req.params

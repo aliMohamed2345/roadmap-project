@@ -3,6 +3,24 @@ import Question from "../models/question.model.js";
 import Quiz from '../models/quiz.model.js'
 import User from "../models/user.model.js";
 import mongoose from "mongoose";
+
+/**
+ * @swagger
+ * /api/v1/quiz:
+ *   get:
+ *     summary: Get all quizzes
+ *     tags: [Quizzes]
+ *     parameters:
+ *       - in: query
+ *         name: key
+ *         required: true
+ *         description: API key required to access this endpoint
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Quiz list
+ */
 export const getAllQuizData = async (req, res) => {
     try {
         const quizData = await Quiz.find().select('title _id description rank');
@@ -22,7 +40,27 @@ export const getAllQuizData = async (req, res) => {
     }
 }
 
-
+/**
+ * @swagger
+ * /api/v1/quiz/{id}:
+ *   get:
+ *     summary: Get quiz or specific question
+ *     tags: [Quizzes]
+ *     parameters:
+ *       - in: query
+ *         name: key
+ *         required: true
+ *         description: API key required to access this endpoint
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: question
+ *         schema:
+ *           type: number
+ *     responses:
+ *       200:
+ *         description: Quiz fetched
+ */
 export const getSpecificQuiz = async (req, res) => {
     try {
         const { id: quizId } = req.params;
@@ -80,9 +118,36 @@ export const getSpecificQuiz = async (req, res) => {
     }
 };
 
-
-
-
+/**
+ * @swagger
+ * /api/v1/quiz:
+ *   post:
+ *     summary: Create a new quiz
+ *     tags: [Quizzes]
+ *     parameters:
+ *       - in: query
+ *         name: key
+ *         required: true
+ *         description: API key required to access this endpoint
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             required: [title, description, rank]
+ *             properties:
+ *               title:
+ *                 type: string
+ *               description:
+ *                 type: string
+ *               rank:
+ *                 type: number
+ *     responses:
+ *       201:
+ *         description: Quiz created successfully
+ */
 export const createQuiz = async (req, res) => {
     try {
         const { title, description, rank } = req.body;
@@ -103,6 +168,23 @@ export const createQuiz = async (req, res) => {
     }
 };
 
+/**
+ * @swagger
+ * /api/v1/quiz/{quizId}/questions:
+ *   post:
+ *     summary: Create question
+ *     tags: [Questions]
+ *     parameters:
+ *       - in: query
+ *         name: key
+ *         required: true
+ *         description: API key required to access this endpoint
+ *         schema:
+ *           type: string
+ *     responses:
+ *       201:
+ *         description: Question created
+ */
 export const createQuestion = async (req, res) => {
     try {
         const { quizId } = req.params
@@ -131,6 +213,30 @@ export const createQuestion = async (req, res) => {
     }
 }
 
+/**
+ * @swagger
+ * /api/v1/questions/{questionId}:
+ *   get:
+ *     summary: Get specific question by ID
+ *     tags: [Questions]
+ *     parameters:
+ *       - in: query
+ *         name: key
+ *         required: true
+ *         description: API key required to access this endpoint
+ *         schema:
+ *           type: string
+ *       - in: path
+ *         name: questionId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Question fetched successfully
+ *       404:
+ *         description: Question not found
+ */
 export const getSpecificQuestion = async (req, res) => {
     try {
         const { questionId } = req.params;
@@ -148,6 +254,24 @@ export const getSpecificQuestion = async (req, res) => {
         return res.status(500).json({ success: false, message: error.message });
     }
 }
+
+/**
+ * @swagger
+ * /api/v1/questions/{questionId}:
+ *   put:
+ *     summary: Update question
+ *     tags: [Questions]
+ *     parameters:
+ *       - in: query
+ *         name: key
+ *         required: true
+ *         description: API key required to access this endpoint
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Question updated
+ */
 export const updateSpecificQuestion = async (req, res) => {
     try {
         const { questionId } = req.params;
@@ -175,6 +299,26 @@ export const updateSpecificQuestion = async (req, res) => {
     }
 }
 
+/**
+ * @swagger
+ * /api/v1/questions/{questionId}:
+ *   delete:
+ *     summary: Delete question
+ *     tags: [Questions]
+ *     parameters:
+ *       - in: query
+ *         name: key
+ *         required: true
+ *         description: API key required to access this endpoint
+ *         schema:
+ *           type: string
+ *       - in: path
+ *         name: questionId
+ *         required: true
+ *     responses:
+ *       200:
+ *         description: Question deleted
+ */
 export const deleteSpecificQuestion = async (req, res) => {
     try {
         const { questionId } = req.params;
@@ -200,6 +344,36 @@ export const deleteSpecificQuestion = async (req, res) => {
     }
 }
 
+/**
+ * @swagger
+ * /api/v1/quiz/{quizId}/submit:
+ *   post:
+ *     summary: Submit quiz answers
+ *     tags: [Quizzes]
+ *     parameters:
+ *       - in: query
+ *         name: key
+ *         required: true
+ *         description: API key required to access this endpoint
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       content:
+ *         application/json:
+ *           schema:
+ *             properties:
+ *               answers:
+ *                 type: array
+ *                 items:
+ *                   properties:
+ *                     questionId:
+ *                       type: string
+ *                     answer:
+ *                       type: string
+ *     responses:
+ *       200:
+ *         description: Quiz submitted
+ */
 export const submitAnswers = async (req, res) => {
     try {
         const { quizId } = req.params;
@@ -276,8 +450,23 @@ export const submitAnswers = async (req, res) => {
     }
 };
 
-
-
+/**
+ * @swagger
+ * /api/v1/quiz/{quizId}/restart:
+ *   post:
+ *     summary: Restart quiz
+ *     tags: [Quizzes]
+ *     parameters:
+ *       - in: query
+ *         name: key
+ *         required: true
+ *         description: API key required to access this endpoint
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Quiz restarted
+ */
 export const restartQuiz = async (req, res) => {
     try {
         const { id: userId } = req.user;
@@ -309,6 +498,27 @@ export const restartQuiz = async (req, res) => {
         return res.status(500).json({ success: false, message: error.message });
     }
 };
+
+/**
+ * @swagger
+ * /api/v1/quiz/{id}:
+ *   delete:
+ *     summary: Delete quiz
+ *     tags: [Quizzes]
+ *     parameters:
+ *       - in: query
+ *         name: key
+ *         required: true
+ *         description: API key required to access this endpoint
+ *         schema:
+ *           type: string
+ *       - in: path
+ *         name: id
+ *         required: true
+ *     responses:
+ *       200:
+ *         description: Quiz deleted successfully
+ */
 export const deleteQuiz = async (req, res) => {
     try {
         const { id } = req.params;
@@ -342,7 +552,37 @@ export const deleteQuiz = async (req, res) => {
     }
 };
 
-
+/**
+ * @swagger
+ * /api/v1/quiz/{id}:
+ *   put:
+ *     summary: Update quiz
+ *     tags: [Quizzes]
+ *     parameters:
+ *       - in: query
+ *         name: key
+ *         required: true
+ *         description: API key required to access this endpoint
+ *         schema:
+ *           type: string
+ *       - in: path
+ *         name: id
+ *         required: true
+ *     requestBody:
+ *       content:
+ *         application/json:
+ *           schema:
+ *             properties:
+ *               title:
+ *                 type: string
+ *               description:
+ *                 type: string
+ *               rank:
+ *                 type: number
+ *     responses:
+ *       200:
+ *         description: Quiz updated successfully
+ */
 export const updateQuiz = async (req, res) => {
     try {
         const { id } = req.params;
