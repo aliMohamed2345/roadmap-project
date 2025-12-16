@@ -18,42 +18,42 @@ import {
     getAllRoadmapSections,
     getAllSectionResources
 } from "../controllers/roadmap.controllers.js";
-import { isAdmin, isIdValid, verifyToken } from "../middleware/middlewares.js";
+import { checkApiKey, isAdmin, isIdValid, verifyToken } from "../middleware/middlewares.js";
 
 const router = express.Router()
 
 //Roadmap
-router.get("/", getAllRoadmapData)
+router.get("/", checkApiKey, getAllRoadmapData)
 
-router.post('/', verifyToken, isAdmin, createRoadmap)
+router.post('/', checkApiKey, verifyToken, isAdmin, createRoadmap)
 
 router.route("/:id")
-    .get(isIdValid, getSpecificRoadmap)
-    .delete(isIdValid, verifyToken, isAdmin, deleteRoadmap)
-    .put(isIdValid, verifyToken, isAdmin, updateRoadmap)
+    .get(checkApiKey, isIdValid, getSpecificRoadmap)
+    .delete(checkApiKey, isIdValid, verifyToken, isAdmin, deleteRoadmap)
+    .put(checkApiKey, isIdValid, verifyToken, isAdmin, updateRoadmap)
 
-router.get('/:id/progress', isIdValid, verifyToken, getUserRoadmapProgress)
+router.get('/:id/progress', checkApiKey, isIdValid, verifyToken, getUserRoadmapProgress)
 
 //Sections 
 router.route('/:id/sections')
-    .get(isIdValid, getAllRoadmapSections)
-    .post(isIdValid, verifyToken, isAdmin, createSection)
+    .get(checkApiKey, isIdValid, getAllRoadmapSections)
+    .post(checkApiKey, isIdValid, verifyToken, isAdmin, createSection)
 
 router.route('/:id/sections/:sectionId')
-    .get(isIdValid, getSectionData)
-    .put(isIdValid, verifyToken, isAdmin, updateSection)
-    .delete(isIdValid, verifyToken, isAdmin, deleteSection)
+    .get(checkApiKey, isIdValid, getSectionData)
+    .put(checkApiKey, isIdValid, verifyToken, isAdmin, updateSection)
+    .delete(checkApiKey, isIdValid, verifyToken, isAdmin, deleteSection)
 
-router.post('/:id/sections/:sectionId/complete', isIdValid, verifyToken, toggleCompletionSection)
+router.post('/:id/sections/:sectionId/complete', checkApiKey, isIdValid, verifyToken, toggleCompletionSection)
 
 //Resources
 router.route('/:id/sections/:sectionId/resources')
-    .post(isIdValid, verifyToken, isAdmin, createResource)
-    .get(isIdValid, getAllSectionResources)
+    .post(checkApiKey, isIdValid, verifyToken, isAdmin, createResource)
+    .get(checkApiKey, isIdValid, getAllSectionResources)
 
 router.route('/:id/sections/:sectionId/resources/:resourceId')
-    .put(isIdValid, verifyToken, isAdmin, updateResource)
-    .delete(isIdValid, verifyToken, isAdmin, deleteResource)
-    .get(isIdValid, getSpecificResource)
+    .put(checkApiKey, isIdValid, verifyToken, isAdmin, updateResource)
+    .delete(checkApiKey, isIdValid, verifyToken, isAdmin, deleteResource)
+    .get(checkApiKey, isIdValid, getSpecificResource)
 
 export default router

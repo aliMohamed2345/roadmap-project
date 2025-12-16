@@ -14,7 +14,6 @@ import {
 } from '../controllers/quiz.controllers.js';
 import { isAdmin, verifyToken, isIdValid } from '../middleware/middlewares.js';
 
-
 const router = express.Router();
 
 

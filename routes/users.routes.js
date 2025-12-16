@@ -9,8 +9,7 @@ import {
     toggleRole,
     uploadProfileImage
 } from '../controllers/users.controllers.js';
-import { verifyToken, isAdmin, isIdValid, upload } from '../middleware/middlewares.js';
-
+import { verifyToken, isAdmin, isIdValid, upload, } from '../middleware/middlewares.js';
 const router = express.Router();
 
 router.route('/profile')
