@@ -11,10 +11,10 @@ import { swaggerSpec } from "../lib/swagger.js";
 import connectToDB from '../lib/db.js';
 
 // Routes
-import authRoutes from './../routes/auth.routes.js';
-import usersRoutes from './../routes/users.routes.js';
-import quizRoutes from './../routes/quiz.routes.js';
-import roadmapRoutes from './../routes/roadmap.routes.js';
+import authRoutes from '../routes/auth.routes.js';
+import usersRoutes from '../routes/users.routes.js';
+import quizRoutes from '../routes/quiz.routes.js';
+import roadmapRoutes from '../routes/roadmap.routes.js';
 import { checkApiKey } from '../middleware/middlewares.js';
 
 // Error handlers
