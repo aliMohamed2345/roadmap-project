@@ -447,3 +447,64 @@ export const uploadProfileImage = async (req, res) => {
         return res.status(500).json({ success: false, message: error.message });
     }
 };
+/**
+ * @swagger
+ * /api/v1/users/delete-image:
+ *   post:
+ *     summary: Delete profile image
+ *     tags: [Users]
+ *     parameters:
+ *       - in: query
+ *         name: key
+ *         required: true
+ *         description: API key required to access this endpoint
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Image uploaded successfully
+ *       400:
+ *         description: No file uploaded
+ *       403:
+ *         description: Invalid API key
+ */
+export const deleteProfileImage = async (req, res) => {
+    try {
+        const user = await User.findById(req.user.id);
+
+        if (!user || !user.imageURL) {
+            return res.status(404).json({
+                success: false,
+                message: "No profile image found",
+            });
+        }
+
+        // Extract public_id from Cloudinary URL
+        const imageUrl = user.imageURL;
+
+        const publicId = imageUrl
+            .split("/")
+            .slice(-2) // folder + filename
+            .join("/")
+            .split(".")[0];
+
+        // Delete from Cloudinary
+        await cloudinary.v2.uploader.destroy(publicId);
+
+        // Remove from DB
+        user.imageURL = null;
+        await user.save();
+
+        return res.status(200).json({
+            success: true,
+            message: "Profile image deleted successfully",
+        });
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({
+            success: false,
+            message: error.message,
+        });
+    }
+
+};

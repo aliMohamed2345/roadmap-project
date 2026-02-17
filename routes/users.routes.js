@@ -7,7 +7,8 @@ import {
     getSpecificUser,
     deleteUser,
     toggleRole,
-    uploadProfileImage
+    uploadProfileImage,
+    deleteProfileImage
 } from '../controllers/users.controllers.js';
 import { verifyToken, isAdmin, isIdValid, upload, } from '../middleware/middlewares.js';
 const router = express.Router();
@@ -21,6 +22,6 @@ router.get('/', verifyToken, isAdmin, getAllUsers)
 router.get('/:id', isIdValid, verifyToken, isAdmin, getSpecificUser)
 router.put('/:id/role', isIdValid, verifyToken, isAdmin, toggleRole)
 router.put('/profile/upload-image', verifyToken, upload.single('image'), uploadProfileImage);
-
+router.delete('/profile/delete-image', verifyToken, deleteProfileImage);
 
 export default router; 
