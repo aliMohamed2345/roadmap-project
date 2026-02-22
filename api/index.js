@@ -41,6 +41,7 @@ app.use(express.json());
 
 // Parse cookies
 app.use(cookieParser());
+
 //add api documentation using swagger
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 

@@ -65,6 +65,28 @@ const userSchema = mongoose.Schema({
                 type: Date,
                 default: Date.now
             }
+        }],
+        project: [{
+            project: {
+                type: mongoose.Schema.Types.ObjectId,
+                ref: "Project",
+                required: true
+            },
+            completedSteps: [{
+                type: mongoose.Schema.Types.ObjectId
+            }],
+            totalSteps: {
+                type: Number,
+                default: 0
+            },
+            completedCount: {
+                type: Number,
+                default: 0
+            },
+            createdAt: {
+                type: Date,
+                default: Date.now
+            }
         }]
     }
 }, { timestamps: true });

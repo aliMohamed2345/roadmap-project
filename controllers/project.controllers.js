@@ -5,13 +5,47 @@ import {
     validateProjectUpdateData,
     validateStepsData
 } from "../utils/validateProjectData.js";
+import User from "../models/user.model.js";
 
+/**
+ * @swagger
+ * /api/v1/projects:
+ *   get:
+ *     summary: Get all projects (with search & pagination)
+ *     tags: [Projects]
+ *     parameters:
+ *       - in: query
+ *         name: q
+ *         schema:
+ *           type: string
+ *         description: Search by title or description
+ *       - in: query
+ *         name: level
+ *         schema:
+ *           type: string
+ *           enum: [Beginner, Intermediate, Advanced]
+ *         description: Filter by project level
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: number
+ *         description: Page number
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: number
+ *         description: Number of projects per page
+ *     responses:
+ *       200:
+ *         description: List of projects
+ *       404:
+ *         description: No projects found
+ */
 export const getAllProjects = async (req, res) => {
     try {
-        const { q = "", page = 1, limit = 10 } = req.query;
+        const { q = "", page = 1, limit = 10, level } = req.query;
 
-        console.log(q)
-        const { isValid, message } = validateProjectQueryString(q, +page, +limit);
+        const { isValid, message } = validateProjectQueryString(q, +page, +limit, level);
         if (!isValid)
             return res.status(400).json({ success: false, message });
 
@@ -24,6 +58,9 @@ export const getAllProjects = async (req, res) => {
                 { description: { $regex: q, $options: "i" } },
             ],
         };
+        if (level) {
+            filter.level = { $regex: level, $options: "i" }
+        }
 
         const [projects, totalDocuments] = await Promise.all([
             Project.find(filter)
@@ -55,6 +92,36 @@ export const getAllProjects = async (req, res) => {
     }
 };
 
+/**
+ * @swagger
+ * /api/v1/projects:
+ *   post:
+ *     summary: Create new project
+ *     tags: [Projects]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             required: [title, description, level]
+ *             properties:
+ *               title:
+ *                 type: string
+ *               description:
+ *                 type: string
+ *               level:
+ *                 type: string
+ *                 enum: [Beginner, Intermediate, Advanced]
+ *               tags:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *     responses:
+ *       201:
+ *         description: Project created successfully
+ */
 export const createProject = async (req, res) => {
     try {
         const { id: userId } = req.user;
@@ -83,6 +150,24 @@ export const createProject = async (req, res) => {
     }
 };
 
+/**
+ * @swagger
+ * /api/v1/projects/{projectId}:
+ *   get:
+ *     summary: Get specific project
+ *     tags: [Projects]
+ *     parameters:
+ *       - in: path
+ *         name: projectId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Project fetched successfully
+ *       404:
+ *         description: Project not found
+ */
 export const getSpecificProject = async (req, res) => {
     try {
         const { projectId } = req.params;
@@ -102,6 +187,39 @@ export const getSpecificProject = async (req, res) => {
     }
 };
 
+/**
+ * @swagger
+ * /api/v1/projects/{projectId}:
+ *   put:
+ *     summary: Update specific project
+ *     tags: [Projects]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: projectId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       content:
+ *         application/json:
+ *           schema:
+ *             properties:
+ *               title:
+ *                 type: string
+ *               description:
+ *                 type: string
+ *               level:
+ *                 type: string
+ *               tags:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *     responses:
+ *       200:
+ *         description: Project updated successfully
+ */
 export const updateSpecificProject = async (req, res) => {
     try {
         const { projectId } = req.params;
@@ -134,6 +252,24 @@ export const updateSpecificProject = async (req, res) => {
     }
 };
 
+/**
+ * @swagger
+ * /api/v1/projects/{projectId}:
+ *   delete:
+ *     summary: Delete specific project
+ *     tags: [Projects]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: projectId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Project deleted successfully
+ */
 export const deleteSpecificProject = async (req, res) => {
     try {
         const { projectId } = req.params;
@@ -157,6 +293,37 @@ export const deleteSpecificProject = async (req, res) => {
     }
 };
 
+/**
+ * @swagger
+ * /api/v1/projects/{projectId}/steps:
+ *   post:
+ *     summary: Add step(s) to project
+ *     tags: [Project Steps]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: projectId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       content:
+ *         application/json:
+ *           schema:
+ *             properties:
+ *               steps:
+ *                 type: array
+ *                 items:
+ *                   properties:
+ *                     title:
+ *                       type: string
+ *                     description:
+ *                       type: string
+ *     responses:
+ *       201:
+ *         description: Step(s) added successfully
+ */
 export const createStep = async (req, res) => {
     try {
         const { projectId } = req.params;
@@ -197,6 +364,25 @@ export const createStep = async (req, res) => {
     }
 };
 
+/**
+ * @swagger
+ * /api/v1/projects/{projectId}/steps/{stepId}:
+ *   put:
+ *     summary: Update project step
+ *     tags: [Project Steps]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: projectId
+ *         required: true
+ *       - in: path
+ *         name: stepId
+ *         required: true
+ *     responses:
+ *       200:
+ *         description: Step updated successfully
+ */
 export const updateStep = async (req, res) => {
     try {
         const { projectId, stepId } = req.params;
@@ -225,6 +411,25 @@ export const updateStep = async (req, res) => {
     }
 };
 
+/**
+ * @swagger
+ * /api/v1/projects/{projectId}/steps/{stepId}:
+ *   delete:
+ *     summary: Delete project step
+ *     tags: [Project Steps]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: projectId
+ *         required: true
+ *       - in: path
+ *         name: stepId
+ *         required: true
+ *     responses:
+ *       200:
+ *         description: Step deleted successfully
+ */
 export const deleteStep = async (req, res) => {
     try {
         const { projectId, stepId } = req.params;
@@ -251,9 +456,29 @@ export const deleteStep = async (req, res) => {
     }
 };
 
+/**
+ * @swagger
+ * /api/v1/projects/{projectId}/steps/{stepId}/toggle:
+ *   patch:
+ *     summary: Toggle step completion
+ *     tags: [Project Steps]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: projectId
+ *         required: true
+ *       - in: path
+ *         name: stepId
+ *         required: true
+ *     responses:
+ *       200:
+ *         description: Step toggled successfully
+ */
 export const toggleStep = async (req, res) => {
     try {
         const { projectId, stepId } = req.params;
+        const { id: userId } = req.user;
 
         const project = await Project.findById(projectId);
         if (!project)
@@ -264,20 +489,67 @@ export const toggleStep = async (req, res) => {
             return res.status(404).json({ success: false, message: "Step not found" });
 
         step.isCompleted = !step.isCompleted;
-
         await project.save();
+
+        if (step.isCompleted) {
+            const user = await User.findById(userId);
+
+            const existingProject = user.progressData.project.find(
+                p => p.project.toString() === projectId
+            );
+
+            if (!existingProject) {
+                // Create new project progress
+                user.progressData.project.push({
+                    project: projectId,
+                    completedSteps: [stepId],
+                    totalSteps: project.steps.length,
+                    completedCount: 1
+                });
+            } else {
+                const alreadyCompleted = existingProject.completedSteps
+                    .some(id => id.toString() === stepId);
+
+                if (!alreadyCompleted) {
+                    existingProject.completedSteps.push(stepId);
+                    existingProject.completedCount =
+                        existingProject.completedSteps.length;
+                }
+            }
+
+            await user.save();
+        }
 
         return res.status(200).json({
             success: true,
             message: "Step toggled successfully",
             step,
         });
+
     } catch (error) {
-        console.log(error.message)
+        console.log(error.message);
         return res.status(500).json({ success: false, message: error.message });
     }
 };
 
+/**
+ * @swagger
+ * /api/v1/projects/{projectId}/steps:
+ *   get:
+ *     summary: Get all steps of a project
+ *     tags: [Project Steps]
+ *     parameters:
+ *       - in: path
+ *         name: projectId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Steps fetched successfully
+ *       404:
+ *         description: Project or steps not found
+ */
 export const getAllSteps = async (req, res) => {
     try {
         const { projectId } = req.params

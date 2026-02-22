@@ -84,10 +84,9 @@ export const validateStepsData = (steps) => {
     }
     return { isValid: true, message: "" }
 }
-export const validateProjectQueryString = (q = "", page = 1, limit = 1) => {
-
+export const validateProjectQueryString = (q = "", page = 1, limit = 1, level) => {
+    const allowedLevels = ["Beginner", "Intermediate", "Advanced"];
     if (q) {
-
         // Query validation
         if (typeof q !== "string") {
             return { isValid: false, message: "Query must be a string." };
@@ -108,6 +107,17 @@ export const validateProjectQueryString = (q = "", page = 1, limit = 1) => {
         }
         if (limit <= 0 || limit > 30) {
             return { isValid: false, message: "Limit must be between 1 and 30." };
+        }
+    }
+    if (level) {
+        if (typeof level !== "string") {
+            return { isValid: false, message: "Level must be a valid string" };
+        }
+        if (!allowedLevels.includes(level)) {
+            return {
+                isValid: false,
+                message: `Level must be one of: ${allowedLevels.join(", ")}`,
+            };
         }
     }
     return { isValid: true, message: "Validation successful." };
