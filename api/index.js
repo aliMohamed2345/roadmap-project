@@ -34,6 +34,7 @@ const limiter = rateLimit({
     max: 100, // limit each IP to 100 requests per window
     message: 'Too many requests from this IP, please try again later',
 });
+
 app.use(limiter);
 
 // Parse JSON requests
@@ -43,7 +44,7 @@ app.use(express.json());
 app.use(cookieParser());
 
 //add api documentation using swagger
-app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec, { explorer: true }));
 
 // Check API key middleware
 app.use(checkApiKey);

@@ -4,8 +4,8 @@ const generateToken = (id, isAdmin, res) => {
 
     res.cookie('token', token, {
         httpOnly: true,//only allow the server to access the cookie and preventing the XSS Attacks
-        sameSite: 'Strict', //prevents the cookie from being sent to other sites
-        secure: process.env.NODE_ENV === 'production', //only allow the cookie to be sent over HTTPS
+        sameSite:"none", //prevents the cookie from being sent to other sites
+        secure: true, //only allow the cookie to be sent over HTTPS
         maxAge: 3 * 24 * 60 * 60 * 1000 //max age 3 days 
     })
     return token
