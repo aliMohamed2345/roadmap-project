@@ -197,6 +197,57 @@ All protected routes require a valid **JWT** stored in an **HTTP-only cookie** (
 
 ---
 
+# 📁 Projects API
+
+## Base Route
+`/projects`
+
+---
+
+## 📌 Endpoints Overview
+
+| Method | Endpoint | Description | Access |
+|--------|----------|------------|--------|
+| GET | `/projects` | Get all projects (search, filter, pagination) | Public |
+| POST | `/projects` | Create new project | Auth |
+| GET | `/projects/:projectId` | Get specific project | Public |
+| PUT | `/projects/:projectId` | Update project | Auth |
+| DELETE | `/projects/:projectId` | Delete project | Auth |
+
+---
+
+# 🧩 Project Steps  
+(Nested under `/projects/:projectId/steps`)
+
+| Method | Endpoint | Description | Access |
+|--------|----------|------------|--------|
+| GET | `/projects/:projectId/steps` | Get all steps of a project | Public |
+| POST | `/projects/:projectId/steps` | Add one or multiple steps | Auth |
+| PUT | `/projects/:projectId/steps/:stepId` | Update specific step | Auth |
+| DELETE | `/projects/:projectId/steps/:stepId` | Delete specific step | Auth |
+| PATCH | `/projects/:projectId/steps/:stepId/toggle` | Toggle step completion & update user progress | Auth |
+
+---
+
+# 🔎 Get All Projects
+
+### Endpoint
+`GET /project`
+
+### Query Parameters
+
+| Query | Type | Description | Default |
+|-------|------|------------|----------|
+| q | string | Search by title or description | `""` |
+| level | string | Filter by level (`Beginner`, `Intermediate`, `Advanced`) | - |
+| page | number | Page number | `1` |
+| limit | number | Projects per page | `10` |
+
+---
+
+### Example Request
+
+
 ## Authorization
 
 * **Authentication:** Handled via **JWT** stored in **HTTP-only cookies** (secure and inaccessible to client-side JavaScript).
