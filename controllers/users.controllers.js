@@ -418,35 +418,34 @@ export const deleteUser = async (req, res) => {
  */
 export const uploadProfileImage = async (req, res) => {
     try {
-        if (!req.file) return res.status(400).json({ success: false, message: "No file uploaded" });
+        if (!req.file) {
+            return res.status(400).json({ success: false, message: "No file uploaded" });
+        }
 
-        // Upload from buffer
-        const result = await cloudinary.v2.uploader.upload_stream(
-            {
-                folder: "user_profiles",
-            },
-            async (error, uploadResult) => {
-                if (error) {
-                    console.error(error);
-                    return res.status(500).json({ success: false, message: error.message });
+        // Wrap upload_stream in a Promise
+        const uploadResult = await new Promise((resolve, reject) => {
+            const stream = cloudinary.uploader.upload_stream(
+                { folder: "user_profiles" },
+                (error, result) => {
+                    if (error) return reject(error);
+                    resolve(result);
                 }
+            );
+            stream.end(req.file.buffer);
+        });
 
-                // Save Cloudinary URL to user
-                const user = await User.findById(req.user.id);
-                user.imageURL = uploadResult.secure_url;
-                await user.save();
+        // Save Cloudinary URL to user
+        const user = await User.findById(req.user.id);
+        user.imageURL = uploadResult.secure_url;
+        await user.save();
 
-                return res.status(200).json({ success: true, imageURL: uploadResult.secure_url });
-            }
-        );
-
-        // Write the file buffer into the upload stream
-        result.end(req.file.buffer);
+        return res.status(200).json({ success: true, imageURL: uploadResult.secure_url });
     } catch (error) {
         console.error(error);
         return res.status(500).json({ success: false, message: error.message });
     }
 };
+
 /**
  * @swagger
  * /api/v1/users/delete-image:
@@ -481,15 +480,19 @@ export const deleteProfileImage = async (req, res) => {
 
         // Extract public_id from Cloudinary URL
         const imageUrl = user.imageURL;
-
         const publicId = imageUrl
             .split("/")
             .slice(-2) // folder + filename
             .join("/")
             .split(".")[0];
 
-        // Delete from Cloudinary
-        await cloudinary.v2.uploader.destroy(publicId);
+        // Wrap destroy in a Promise
+        await new Promise((resolve, reject) => {
+            cloudinary.uploader.destroy(publicId, (error, result) => {
+                if (error) return reject(error);
+                resolve(result);
+            });
+        });
 
         // Remove from DB
         user.imageURL = null;
@@ -506,5 +509,4 @@ export const deleteProfileImage = async (req, res) => {
             message: error.message,
         });
     }
-
 };
