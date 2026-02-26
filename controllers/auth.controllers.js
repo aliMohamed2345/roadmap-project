@@ -42,6 +42,7 @@ env.config();
  */
 export const Login = async (req, res) => {
     try {
+        const defaultImage = "https://cdn-icons-png.flaticon.com/512/149/149071.png"
         const { email, password } = req.body
         const { isValid, message } = validateLogInCredentials(email, password)
 
@@ -62,7 +63,7 @@ export const Login = async (req, res) => {
         return res.status(200).json({
             success: true,
             message: "Login successfully",
-            user: { id: user._id, username: user.username, email: user.email, isAdmin: user.isAdmin }
+            user: { id: user._id, username: user.username, email: user.email, isAdmin: user.isAdmin, imageURL: user.imageURL || defaultImage }
         })
 
     } catch (error) {
@@ -109,11 +110,13 @@ export const Login = async (req, res) => {
  */
 export const SignUp = async (req, res) => {
     try {
+        const defaultImage = `"https://cdn-icons-png.flaticon.com/512/149/149071.png"`
         const { username, email, password } = req.body
 
         //check the validation of the signup credentials
         const { isValid, message } = validateSignUpCredentials(email, password, username)
         if (!isValid) return res.status(400).json({ success: false, message })
+
 
         //encrypting the password 
         const salt = await bcrypt.genSalt(12)
@@ -131,7 +134,7 @@ export const SignUp = async (req, res) => {
         return res.status(201).json({
             success: true,
             message: "User created successfully",
-            user: { id: user._id, username: user.username, email: user.email, isAdmin: user.isAdmin }
+            user: { id: user._id, username: user.username, email: user.email, isAdmin: user.isAdmin, imageURL: user.imageURL || defaultImage }
         })
     } catch (error) {
         console.log(error.message)
