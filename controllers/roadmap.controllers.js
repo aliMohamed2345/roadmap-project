@@ -55,26 +55,38 @@ export const getAllRoadmapData = async (req, res) => {
  *       200:
  *         description: Roadmap progress fetched
  */
+
 export const getUserRoadmapProgress = async (req, res) => {
     try {
         const { id: userId } = req.user
-        const { id: roadmapId } = req.params
+        const { id: roadmapId } = req.params;
 
-        // Fetch roadmap with all sections
-        const roadmap = await Roadmap.findById(roadmapId).populate('sections');
+        // Fetch roadmap with sections and nested resources
+        const roadmap = await Roadmap.findById(roadmapId).populate({
+            path: "sections",
+            populate: {
+                path: "resources",
+                model: "Resource",
+            },
+        });
+
         if (!roadmap) {
-            return res.status(404).json({ success: false, message: "Roadmap not found" });
+            return res
+                .status(404)
+                .json({ success: false, message: "Roadmap not found" });
         }
 
         // Fetch user
         const user = await User.findById(userId);
         if (!user) {
-            return res.status(404).json({ success: false, message: "User not found" });
+            return res
+                .status(404)
+                .json({ success: false, message: "User not found" });
         }
 
         // Get user's progress for this roadmap
-        let progress = user.progressData.roadmap.find(e =>
-            e.roadmap.toString() === roadmapId
+        let progress = user.progressData.roadmap.find(
+            (e) => e.roadmap.toString() === roadmapId
         );
 
         // If no progress, initialize
@@ -82,41 +94,51 @@ export const getUserRoadmapProgress = async (req, res) => {
             progress = {
                 roadmap: roadmap._id,
                 completedSections: [],
-                numberOfAllSections: roadmap.sections.length
+                numberOfAllSections: roadmap.sections.length,
             };
         }
 
+
         // Prepare detailed completed sections
-        const completedSections = roadmap.sections.map(section => ({
+        const completedSections = roadmap.sections.map((section) => ({
             _id: section._id,
             title: section.title,
             description: section.description,
+            difficulty: section.difficulty,
             completed: progress.completedSections.some(
-                id => id.toString() === section._id.toString()
-            )
+                (id) => id.toString() === section._id.toString()
+            ),
+            resources: section.resources.map((resource) => ({
+                _id: resource._id,
+                title: resource.title,
+                url: resource.url,
+                type: resource.type,
+            })),
         }));
 
-        // Calculate total and completed
+        // Calculate totals
         const total = roadmap.sections.length;
-        const completed = completedSections.filter(s => s.completed).length;
-        const progressPercentage = total > 0 ? Math.round((completed / total) * 100) : 0;
+        const completed = completedSections.filter((s) => s.completed).length;
+        const progressPercentage =
+            total > 0 ? Math.round((completed / total) * 100) : 0;
 
         return res.status(200).json({
             success: true,
             roadmap: {
                 _id: roadmap._id,
                 title: roadmap.title,
-                description: roadmap.description
+                description: roadmap.description,
             },
             sections: completedSections,
             total,
             completed,
-            progressPercentage
+            progressPercentage,
         });
-
     } catch (error) {
         console.error("Get User Roadmap Progress Error:", error);
-        return res.status(500).json({ success: false, message: "Internal server error" });
+        return res
+            .status(500)
+            .json({ success: false, message: "Internal server error" });
     }
 };
 
