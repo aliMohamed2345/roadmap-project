@@ -1,4 +1,4 @@
-import { validateQuestionData, validateQuizData } from "../utils/validateQuestionData.js";
+import { validateQuestionData, validateQuestionQueryString, validateQuizData } from "../utils/validateQuestionData.js";
 import Question from "../models/question.model.js";
 import Quiz from '../models/quiz.model.js'
 import User from "../models/user.model.js";
@@ -603,3 +603,176 @@ export const updateQuiz = async (req, res) => {
         return res.status(500).json({ success: false, message: error.message });
     }
 }
+
+/**
+ * @swagger
+ * /api/v1/quiz/{quizId}/questions:
+ *   get:
+ *     summary: Get all questions from a specific quiz
+ *     tags: [Quizzes]
+ *     parameters:
+ *       - in: path
+ *         name: quizId
+ *         required: true
+ *         description: The ID of the quiz to fetch questions from
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: page
+ *         required: false
+ *         description: Page number for pagination (default: 1)
+ *         schema:
+ *           type: integer
+ *       - in: query
+ *         name: limit
+ *         required: false
+ *         description: Number of questions per page (default: 10)
+ *         schema:
+ *           type: integer
+ *       - in: query
+ *         name: q
+ *         required: false
+ *         description: Search term to filter questions by text
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: sort
+ *         required: false
+ *         description: Field to sort questions by (default: createdAt)
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: random
+ *         required: false
+ *         description: If true, returns random questions instead of paginated results
+ *         schema:
+ *           type: string
+ *           enum: [true, false]
+ *     responses:
+ *       200:
+ *         description: Successfully retrieved questions
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 mode:
+ *                   type: string
+ *                   description: "random or paginated"
+ *                 totalQuestions:
+ *                   type: integer
+ *                 totalPages:
+ *                   type: integer
+ *                 page:
+ *                   type: integer
+ *                 questions:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       _id:
+ *                         type: string
+ *                       question:
+ *                         type: string
+ *                       answer:
+ *                         type: string
+ *                       options:
+ *                         type: array
+ *                         items:
+ *                           type: string
+ *       400:
+ *         description: Invalid query parameters or quiz ID
+ *       404:
+ *         description: No questions found for this quiz
+ *       500:
+ *         description: Internal server error
+ */
+export const getAllQuestionsFromQuiz = async (req, res) => {
+    try {
+        const { quizId } = req.params;
+        const {
+            page = 1,
+            limit = 10,
+            q,
+            sort = "createdAt",
+            random = "false",
+        } = req.query;
+
+        const { isValid, message } = validateQuestionQueryString(page, limit, q, sort, random)
+        if (!isValid) return res.status(400).json({ success: false, message })
+
+        if (!mongoose.Types.ObjectId.isValid(quizId)) {
+            return res.status(400).json({
+                success: false,
+                message: "Invalid quiz ID"
+            });
+        }
+
+        const filter = {
+            quizId: new mongoose.Types.ObjectId(quizId)
+        };
+
+        if (q) {
+            filter.question = { $regex: q, $options: "i" };
+        }
+
+        if (random === "true") {
+            const randomCount = parseInt(limit) || 10;
+
+            const questions = await Question.aggregate([
+                { $match: filter },
+                { $sample: { size: randomCount } }
+            ]);
+
+            if (!questions.length) {
+                return res.status(404).json({
+                    success: false,
+                    message: "No questions found for this quiz"
+                });
+            }
+
+            return res.status(200).json({
+                success: true,
+                mode: "random",
+                total: questions.length,
+                questions
+            });
+        }
+
+        const pageNumber = parseInt(page) || 1;
+        const limitNumber = parseInt(limit) || 10;
+
+        const total = await Question.countDocuments(filter);
+        const skipNumber = (pageNumber - 1) * limitNumber
+
+        const questions = await Question.find(filter)
+            .sort({ [sort]: -1 })
+            .skip(skipNumber)
+            .limit(limitNumber);
+
+        if (!questions.length) {
+            return res.status(404).json({
+                success: false,
+                message: "No questions found in this quiz"
+            });
+        }
+
+        return res.status(200).json({
+            success: true,
+            mode: "paginated",
+            page: pageNumber,
+            totalPages: Math.ceil(total / limitNumber),
+            totalQuestions: total,
+            questions
+        });
+
+    } catch (error) {
+        console.error(error.message);
+        return res.status(500).json({
+            success: false,
+            message: error.message
+        });
+    }
+};

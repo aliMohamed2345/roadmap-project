@@ -16,7 +16,10 @@ import {
     toggleCompletionSection,
     getUserRoadmapProgress,
     getAllRoadmapSections,
-    getAllSectionResources
+    getAllSectionResources,
+    exportRoadmapToJSON,
+    exportRoadmapToPDF,
+    exportRoadmapToCSV
 } from "../controllers/roadmap.controllers.js";
 import { checkApiKey, isAdmin, isIdValid, verifyToken } from "../middleware/middlewares.js";
 
@@ -33,6 +36,9 @@ router.route("/:id")
     .put(checkApiKey, isIdValid, verifyToken, isAdmin, updateRoadmap)
 
 router.get('/:id/progress', checkApiKey, isIdValid, verifyToken, getUserRoadmapProgress)
+router.get('/:id/progress/export/json', checkApiKey, isIdValid, verifyToken, exportRoadmapToJSON)
+router.get('/:id/progress/export/pdf', checkApiKey, isIdValid, verifyToken, exportRoadmapToPDF)
+router.get('/:id/progress/export/csv', checkApiKey, isIdValid, verifyToken, exportRoadmapToCSV)
 
 //Sections 
 router.route('/:id/sections')
