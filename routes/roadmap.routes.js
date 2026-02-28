@@ -5,23 +5,35 @@ import {
     createRoadmap,
     deleteRoadmap,
     updateRoadmap,
-    createSection,
-    getSectionData,
-    updateSection,
-    deleteSection,
-    createResource,
-    updateResource,
-    getSpecificResource,
-    deleteResource,
-    toggleCompletionSection,
     getUserRoadmapProgress,
-    getAllRoadmapSections,
-    getAllSectionResources,
     exportRoadmapToJSON,
     exportRoadmapToPDF,
     exportRoadmapToCSV
 } from "../controllers/roadmap.controllers.js";
-import { checkApiKey, isAdmin, isIdValid, verifyToken } from "../middleware/middlewares.js";
+
+import {
+    checkApiKey,
+    isAdmin,
+    isIdValid,
+    verifyToken
+} from "../middleware/middlewares.js";
+
+import {
+    getSectionData,
+    createSection,
+    deleteSection,
+    getAllRoadmapSections,
+    updateSection,
+    toggleCompletionSection
+} from "../controllers/section.controllers.js";
+
+import {
+    createResource,
+    deleteResource,
+    getAllSectionResources,
+    updateResource,
+    getSpecificResource
+} from "../controllers/resource.controllers.js"
 
 const router = express.Router()
 

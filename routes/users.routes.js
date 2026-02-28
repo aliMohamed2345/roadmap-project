@@ -1,16 +1,18 @@
 import express from 'express'
 import {
     changePassword,
-    Profile,
-    updateProfile,
     getAllUsers,
     getSpecificUser,
     deleteUser,
     toggleRole,
-    uploadProfileImage,
-    deleteProfileImage
 } from '../controllers/users.controllers.js';
 import { verifyToken, isAdmin, isIdValid, upload, } from '../middleware/middlewares.js';
+import {
+    Profile,
+    deleteProfileImage,
+    updateProfile,
+    uploadProfileImage
+} from '../controllers/profile.controllers.js';
 const router = express.Router();
 
 router.route('/profile')

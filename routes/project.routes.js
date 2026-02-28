@@ -3,14 +3,16 @@ import {
     getSpecificProject,
     updateSpecificProject,
     createProject,
-    createStep,
     deleteSpecificProject,
-    toggleStep,
-    deleteStep,
     getAllProjects,
-    updateStep,
-    getAllSteps
 } from "../controllers/project.controllers.js";
+import {
+    getAllSteps,
+    createStep,
+    deleteStep,
+    toggleStep,
+    updateStep
+} from "../controllers/step.controllers.js";
 import { verifyToken, isAdmin } from "../middleware/middlewares.js";
 
 const router = Router();

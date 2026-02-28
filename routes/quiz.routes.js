@@ -3,17 +3,19 @@ import {
     getAllQuizData,
     createQuiz,
     getSpecificQuiz,
-    createQuestion,
-    getSpecificQuestion,
-    updateSpecificQuestion,
-    deleteSpecificQuestion,
     submitAnswers,
     restartQuiz,
     deleteQuiz,
     updateQuiz,
-    getAllQuestionsFromQuiz
 } from '../controllers/quiz.controllers.js';
 import { isAdmin, verifyToken, isIdValid } from '../middleware/middlewares.js';
+import {
+    createQuestion,
+    deleteSpecificQuestion,
+    getAllQuestionsFromQuiz,
+    getSpecificQuestion,
+    updateSpecificQuestion
+} from '../controllers/question.controllers.js';
 
 const router = express.Router();
 
