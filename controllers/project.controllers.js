@@ -5,7 +5,6 @@ import {
     validateProjectUpdateData,
     validateStepsData
 } from "../utils/validateProjectData.js";
-import User from "../models/user.model.js";
 
 /**
  * @swagger

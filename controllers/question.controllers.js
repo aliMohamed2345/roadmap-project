@@ -1,6 +1,7 @@
 import { validateQuestionData, validateQuestionQueryString } from "../utils/validateQuestionData.js";
 import Question from "../models/question.model.js";
 import Quiz from "../models/quiz.model.js";
+import mongoose from 'mongoose'
 /**
  * @swagger
  * /api/v1/quiz/{quizId}/questions:

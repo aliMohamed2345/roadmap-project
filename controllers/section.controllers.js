@@ -3,6 +3,7 @@ import { validateSectionData } from "../utils/validateRoadmapData.js";
 import Roadmap from "../models/roadmap.model.js";
 import Resource from "../models/resource.model.js";
 import User from "../models/user.model.js";
+import mongoose from "mongoose";
 /**
  * @swagger
  * /api/v1/roadmap/{id}/sections:
