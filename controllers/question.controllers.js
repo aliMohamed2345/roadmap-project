@@ -77,8 +77,8 @@ export const getAllQuestionsFromQuiz = async (req, res) => {
             random = "false",
         } = req.query;
 
-        const { isValid, message } = validateQuestionQueryString(page, limit, q, sort, random)
-        if (!isValid) return res.status(400).json({ success: false, message })
+        const { isValid, message } = validateQuestionQueryString(page, limit, q, sort, random);
+        if (!isValid) return res.status(400).json({ success: false, message });
 
         if (!mongoose.Types.ObjectId.isValid(quizId)) {
             return res.status(400).json({
@@ -95,39 +95,25 @@ export const getAllQuestionsFromQuiz = async (req, res) => {
             filter.question = { $regex: q, $options: "i" };
         }
 
-        if (random === "true") {
-            const randomCount = parseInt(limit) || 10;
-
-            const questions = await Question.aggregate([
-                { $match: filter },
-                { $sample: { size: randomCount } }
-            ]);
-
-            if (!questions.length) {
-                return res.status(404).json({
-                    success: false,
-                    message: "No questions found for this quiz"
-                });
-            }
-
-            return res.status(200).json({
-                success: true,
-                mode: "random",
-                total: questions.length,
-                questions
-            });
-        }
-
         const pageNumber = parseInt(page) || 1;
         const limitNumber = parseInt(limit) || 10;
+        const skipNumber = (pageNumber - 1) * limitNumber;
 
         const total = await Question.countDocuments(filter);
-        const skipNumber = (pageNumber - 1) * limitNumber
 
-        const questions = await Question.find(filter)
-            .sort({ [sort]: -1 })
-            .skip(skipNumber)
-            .limit(limitNumber);
+        let questions;
+
+        if (random === "true") {
+            questions = await Question.aggregate([
+                { $match: filter },
+                { $sample: { size: limitNumber } }
+            ]);
+        } else {
+            questions = await Question.find(filter)
+                .sort({ [sort]: -1 })
+                .skip(skipNumber)
+                .limit(limitNumber);
+        }
 
         if (!questions.length) {
             return res.status(404).json({
