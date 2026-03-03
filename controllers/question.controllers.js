@@ -1,4 +1,4 @@
-import { validateQuestionData, validateQuestionQueryString } from "../utils/validateQuestionData.js";
+import { validateCreationQuestionData, validateQuestionData, validateQuestionQueryString } from "../utils/validateQuestionData.js";
 import Question from "../models/question.model.js";
 import Quiz from "../models/quiz.model.js";
 import mongoose from 'mongoose'
@@ -165,7 +165,7 @@ export const createQuestion = async (req, res) => {
         if (!mongoose.Types.ObjectId.isValid(quizId)) return res.status(400).json({ success: false, message: 'Invalid Id' });
 
         //validate the request body
-        const { isValid, message } = validateQuestionData(question, answer, options)
+        const { isValid, message } = validateCreationQuestionData(question, answer, options)
         if (!isValid) return res.status(400).json({ success: false, message })
 
         //checking if the quiz exist 

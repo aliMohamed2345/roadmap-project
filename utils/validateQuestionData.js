@@ -22,7 +22,36 @@ export const validateQuestionData = (question, answer, options) => {
 
 
 
-    return { isValid: true, message: "Valid question data." };
+    return { isValid: true, message: "" };
+};
+export const validateCreationQuestionData = (question, answer, options) => {
+    if (!question) {
+        return { isValid: false, message: "Question is required" }
+    }
+    if (!answer) {
+        return { isValid: false, message: `Answer is required` }
+    }
+    if (!options) {
+        return { isValid: false, message: `Options are required` }
+    }
+
+    if (typeof question !== "string" || question.trim().length < 5)
+        return { isValid: false, message: "Question must be a valid text with at least 5 characters." };
+
+    if (typeof answer !== "string" || !answer.trim())
+        return { isValid: false, message: "Answer is required and must be a valid string." };
+
+    if (!Array.isArray(options))
+        return { isValid: false, message: "Options must be an array." };
+
+    if (options.length !== 4) return { isValid: false, message: "Each question must have 4 options with the answer" };
+
+    // Check for duplicate options
+    const uniqueOptions = new Set(options.map(o => o.trim().toLowerCase()));
+    if (uniqueOptions.size !== options.length)
+        return { isValid: false, message: "Options must be unique." };
+
+    return { isValid: true, message: "" };
 };
 
 export const validateQuizData = (title, description, rank) => {
