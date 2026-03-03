@@ -3,7 +3,7 @@ import Question from "../models/question.model.js";
 import Quiz from '../models/quiz.model.js'
 import User from "../models/user.model.js";
 import mongoose from "mongoose";
-
+import { getGrade } from "../utils/getGrade.js";
 /**
  * @swagger
  * /api/v1/quiz:
