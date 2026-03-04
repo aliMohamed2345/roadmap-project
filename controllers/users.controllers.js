@@ -1,5 +1,6 @@
 import User from "../models/user.model.js"
 import bcrypt from "bcryptjs"
+import { validateChangeProfileCredentials } from "../utils/validateUserCredentials.js";
 
 
 /**
@@ -256,32 +257,39 @@ export const toggleRole = async (req, res) => {
     }
 };
 
-/**
- * @swagger
- * /api/v1/users:
- *   delete:
- *     summary: Delete logged-in user
- *     tags: [Users]
- *     parameters:
- *       - in: query
- *         name: key
- *         required: true
- *         description: API key required to access this endpoint
- *         schema:
- *           type: string
- *     responses:
- *       200:
- *         description: User deleted successfully
- *       403:
- *         description: Invalid API key
- */
 export const deleteUser = async (req, res) => {
     try {
-        const { id: userId } = req.user
-        await User.findByAndDelete(userId)
-        return res.status(200).json({ success: true, message: 'User deleted successfully' })
+        const { id: userId } = req.params
+
+        await User.findByIdAndDelete(userId);
+        return res.status(200).json({ success: true, message: `User deleted successfully` });
     } catch (error) {
-        console.error(error.message)
-        return res.status(500).json({ success: false, message: error.message })
+        console.error(error.message);
+        return res.status(500).json({ success: false, message: error.message });
+    }
+}
+export const updateUser = async (req, res) => {
+    try {
+        const { id: userId } = req.params
+
+        const { username, email, imageURL, bio } = req.body;
+
+        const { isValid, message } = validateChangeProfileCredentials(email, username, imageURL, bio)
+        if (!isValid) return res.status(400).json({ success: false, message })
+
+        const updatedData = {};
+
+        if (username) updatedData.username = username;
+        if (email) updatedData.email = email;
+        if (imageURL) updatedData.imageURL = imageURL;
+        if (bio) updatedData.bio = bio;
+
+        const user = await User.findByIdAndUpdate(userId, updatedData, { new: true }).select('username email imageURL id isAdmin');
+
+        return res.status(200).json({ success: true, message: 'User updated successfully', user })
+
+    } catch (error) {
+        console.error(error.message);
+        return res.status(500).json({ success: false, message: error.message });
     }
 }

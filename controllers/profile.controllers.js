@@ -100,6 +100,7 @@ export const updateProfile = async (req, res) => {
         return res.status(500).json({ success: false, message: error.message })
     }
 }
+
 /**
  * @swagger
  * /api/v1/users/upload-image:
@@ -224,3 +225,33 @@ export const deleteProfileImage = async (req, res) => {
         });
     }
 };
+
+/**
+ * @swagger
+ * /api/v1/users:
+ *   delete:
+ *     summary: Delete logged-in user
+ *     tags: [Users]
+ *     parameters:
+ *       - in: query
+ *         name: key
+ *         required: true
+ *         description: API key required to access this endpoint
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: User deleted successfully
+ *       403:
+ *         description: Invalid API key
+ */
+export const deleteProfile = async (req, res) => {
+    try {
+        const { id: userId } = req.user
+        await User.findByAndDelete(userId)
+        return res.status(200).json({ success: true, message: 'User deleted successfully' })
+    } catch (error) {
+        console.error(error.message)
+        return res.status(500).json({ success: false, message: error.message })
+    }
+}
