@@ -5,7 +5,19 @@ import User from '../models/user.model.js'
 import { validateRoadmapData } from '../utils/validateRoadmapData.js'
 import PDFDocument from 'pdfkit'
 import { Parser } from 'json2csv'
-
+import {
+    C,
+    DIFFICULTY,
+    LAYOUT,
+    RESOURCE_TYPE,
+    drawBackground,
+    drawConnector,
+    drawFooter,
+    drawHeader,
+    drawSectionCard,
+    measureCardHeight,
+    roundedRect
+} from '../utils/PDFBuilder.js'
 /**
  * @swagger
  * /api/v1/roadmap:
@@ -415,126 +427,66 @@ export const exportRoadmapToPDF = async (req, res) => {
 
         const roadmap = await Roadmap.findById(roadmapId).populate({
             path: "sections",
-            populate: { path: "resources" }
+            populate: { path: "resources" },
         });
 
         if (!roadmap) {
-            return res.status(404).json({
-                success: false,
-                message: "Roadmap not found"
-            });
+            return res.status(404).json({ success: false, message: "Roadmap not found" });
         }
 
-        const doc = new PDFDocument({
-            margin: 50,
-            size: "A4"
-        });
+        const doc = new PDFDocument({ margin: 0, size: "A4" });
 
         res.setHeader("Content-Type", "application/pdf");
-        res.setHeader(
-            "Content-Disposition",
-            `attachment; filename="${roadmap.title}.pdf"`
-        );
-
+        res.setHeader("Content-Disposition", `attachment; filename="${roadmap.title}.pdf"`);
         doc.pipe(res);
 
-        doc
-            .fontSize(26)
-            .fillColor("#2C3E50")
-            .text(roadmap.title, { align: "center" });
+        // ── Page layout constants ─────────────────────────────────────────────
+        const CARD_X = 30;
+        const CARD_W = 595 - 60;
+        const CARD_GAP = 18;
+        const START_Y = 148;    // first card top (below 130pt header + 18pt gap)
+        const PAGE_MAX = 812;    // stop before footer zone
 
-        doc.moveDown(0.5);
+        let pageNum = 1;
+        let cursorY = START_Y;
+        const cardPositions = [];   // [(top, bottom)] for connector lines
 
-        doc
-            .fontSize(14)
-            .fillColor("#555")
-            .text(roadmap.description, {
-                align: "center"
-            });
+        drawBackground(doc);
+        drawHeader(doc, roadmap.title, roadmap.description || "");
+        drawFooter(doc, roadmap.title, pageNum);
 
-        doc.moveDown(2);
+        for (let i = 0; i < roadmap.sections.length; i++) {
+            const section = roadmap.sections[i];
+            const cardH = measureCardHeight(doc, section, CARD_W);
 
-        doc
-            .moveTo(50, doc.y)
-            .lineTo(550, doc.y)
-            .strokeColor("#cccccc")
-            .stroke();
-
-        doc.moveDown(1.5);
-
-        roadmap.sections.forEach((section, index) => {
-
-            doc
-                .fontSize(18)
-                .fillColor("#1A73E8")
-                .text(`${index + 1}. ${section.title}`);
-
-            doc.moveDown(0.3);
-
-            doc
-                .fontSize(10)
-                .fillColor("#ffffff")
-                .rect(doc.x, doc.y, 80, 18)
-                .fill("#6C63FF")
-                .fillColor("#ffffff")
-                .text(section.difficulty || "N/A", doc.x + 10, doc.y + 5);
-
-            doc.moveDown(1);
-
-            doc
-                .fontSize(12)
-                .fillColor("#333")
-                .text(section.description, {
-                    align: "left"
-                });
-
-            doc.moveDown(1);
-
-            if (section.resources.length > 0) {
-
-                doc
-                    .fontSize(14)
-                    .fillColor("#000")
-                    .text("Resources:", { underline: true });
-
-                doc.moveDown(0.5);
-
-                section.resources.forEach((resource, rIndex) => {
-
-                    const linkText = `• ${resource.title} (${resource.type})`;
-
-                    doc
-                        .fillColor("#1A73E8")
-                        .fontSize(12)
-                        .text(linkText, {
-                            link: resource.url,
-                            underline: true
-                        });
-
-                    doc.moveDown(0.4);
-                });
-
+            // Page break if card won't fit
+            if (cursorY + cardH > PAGE_MAX) {
+                doc.addPage({ margin: 0, size: "A4" });
+                pageNum++;
+                drawBackground(doc);
+                drawHeader(doc, roadmap.title, roadmap.description || "");
+                drawFooter(doc, roadmap.title, pageNum);
+                cursorY = START_Y;
+                cardPositions.length = 0;   // reset connectors for new page
             }
 
-            doc.moveDown(1.5);
+            const cardBottom = drawSectionCard(doc, section, i, CARD_X, cursorY, CARD_W);
+            cardPositions.push([cursorY, cardBottom]);
+            cursorY = cardBottom + CARD_GAP;
+        }
 
-            // Divider between sections
-            doc
-                .moveTo(50, doc.y)
-                .lineTo(550, doc.y)
-                .strokeColor("#eeeeee")
-                .stroke();
-
-            doc.moveDown(1.5);
-
-        });
-
+        // Dashed connectors between cards
+        const connectorX = CARD_X + 28;   // aligned with circle centre
+        for (let i = 0; i < cardPositions.length - 1; i++) {
+            const [, bot] = cardPositions[i];
+            const [nextTop] = cardPositions[i + 1];
+            drawConnector(doc, connectorX, bot, nextTop);
+        }
 
         doc.end();
-
     } catch (error) {
-        console.error(error.message)
-        return res.status(500).json({ success: false, message: error.message })
+        console.error(error.message);
+        return res.status(500).json({ success: false, message: error.message });
     }
 };
 
