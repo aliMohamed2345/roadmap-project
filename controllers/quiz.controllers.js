@@ -4,6 +4,16 @@ import Quiz from '../models/quiz.model.js'
 import User from "../models/user.model.js";
 import mongoose from "mongoose";
 import { getGrade } from "../utils/getGrade.js";
+import {
+    PDF_COLORS,
+    PDF_FONTS,
+    PDF_SIZES,
+    fillBackground,
+    drawRoundedRect,
+    RANK_COLORS
+} from "../utils/PDFBuilder.js";
+import { Parser } from "json2csv";
+import PDFDocument from 'pdfkit'
 /**
  * @swagger
  * /api/v1/quiz:
@@ -101,11 +111,12 @@ export const getSpecificQuiz = async (req, res) => {
                 totalQuestions: quiz.questions.length,
                 questionNumber,
                 currentQuestion,
+                rank: quiz.rank
             });
         }
 
         // ✅ If no question query 
-        const populatedQuiz = await Quiz.findById(quizId).populate("questions");
+        const populatedQuiz = await Quiz.findById(quizId).select('title _id description rank').populate("questions");
 
         return res.status(200).json({
             success: true,
@@ -427,3 +438,401 @@ export const updateQuiz = async (req, res) => {
         return res.status(500).json({ success: false, message: error.message });
     }
 }
+
+
+/**
+ * @swagger
+ * /api/v1/quiz/{id}/export/json:
+ *   get:
+ *     summary: Export a quiz and its questions as a JSON file
+ *     tags: [Quizzes]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: The quiz ID to export
+ *     responses:
+ *       200:
+ *         description: JSON file download
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *       404:
+ *         description: Quiz not found
+ *       500:
+ *         description: Server error
+ */
+export const exportQuizToJSON = async (req, res) => {
+    try {
+        const { id: quizId } = req.params;
+        const quiz = await Quiz.findById(quizId).populate("questions");
+
+        if (!quiz)
+            return res.status(404).json({ success: false, message: "Quiz not found." });
+
+        const payload = {
+            exported_at: new Date().toISOString(),
+            quiz: {
+                id: quiz._id,
+                title: quiz.title,
+                description: quiz.description,
+                rank: quiz.rank,
+                total_questions: quiz.questions.length,
+                questions: quiz.questions.map((q, index) => ({
+                    number: index + 1,
+                    id: q._id,
+                    question: q.question,
+                    options: q.options ?? [],
+                    answer: q.answer,
+                })),
+            },
+        };
+
+        const filename = `${quiz.title.replace(/\s+/g, "_")}_quiz.json`;
+        res.setHeader("Content-Type", "application/json");
+        res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
+        return res.status(200).json(payload);
+    } catch (error) {
+        console.error(error.message);
+        return res.status(500).json({ success: false, message: error.message });
+    }
+};
+
+/**
+ * @swagger
+ * /api/v1/quiz/{id}/export/pdf:
+ *   get:
+ *     summary: Export a quiz and its questions as a styled PDF file
+ *     tags: [Quizzes]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: The quiz ID to export
+ *     responses:
+ *       200:
+ *         description: PDF file download
+ *         content:
+ *           application/pdf:
+ *             schema:
+ *               type: string
+ *               format: binary
+ *       404:
+ *         description: Quiz not found
+ *       500:
+ *         description: Server error
+ */
+export const exportQuizToPDF = async (req, res) => {
+    try {
+        const { id: quizId } = req.params;
+        const quiz = await Quiz.findById(quizId).populate("questions");
+        if (!quiz)
+            return res.status(404).json({ success: false, message: "Quiz not found." });
+
+        const { pageWidth, pageHeight, marginX, marginY, contentWidth } = PDF_SIZES;
+
+        const doc = new PDFDocument({
+            size: "A4",
+            margins: { top: marginY, bottom: marginY, left: marginX, right: marginX },
+            bufferPages: true,
+            info: {
+                Title: quiz.title,
+                Author: "MERN Roadmap Platform",
+                Subject: "Quiz Export",
+            },
+        });
+
+        const filename = `${quiz.title.replace(/\s+/g, "_")}_quiz.pdf`;
+        res.setHeader("Content-Type", "application/pdf");
+        res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
+        doc.pipe(res);
+
+        // ── Page 1 background ─────────────────────────────────────────────────
+        fillBackground(doc);
+
+        // ── Header ────────────────────────────────────────────────────────────
+        const HEADER_H = 160;
+        drawRoundedRect(doc, 0, 0, pageWidth, HEADER_H, 0, PDF_COLORS.surface);
+        doc.rect(0, 0, 5, HEADER_H).fillColor(PDF_COLORS.accent).fillOpacity(1).fill();
+
+        // Decorative circles
+        doc.save().circle(pageWidth - 60, 30, 80).fillColor(PDF_COLORS.accentSoft).fillOpacity(0.06).fill().restore();
+        doc.save().circle(pageWidth - 20, 80, 50).fillColor(PDF_COLORS.accentSoft).fillOpacity(0.05).fill().restore();
+
+        // Platform label
+        doc
+            .fillColor(PDF_COLORS.accentSoft).fillOpacity(1)
+            .font(PDF_FONTS.body).fontSize(10)
+            .text("MERN ROADMAP PLATFORM", marginX + 10, marginY, { characterSpacing: 1.5 });
+
+        // Quiz title — measure height to avoid cursor drift
+        const titleText = quiz.title;
+        const titleWidth = contentWidth - 60;
+        doc.font(PDF_FONTS.heading).fontSize(24);
+        const titleHeight = doc.heightOfString(titleText, { width: titleWidth });
+
+        doc
+            .fillColor(PDF_COLORS.textPrimary).fillOpacity(1)
+            .font(PDF_FONTS.heading).fontSize(24)
+            .text(titleText, marginX + 10, marginY + 22, { width: titleWidth, lineBreak: true });
+
+        const afterTitleY = marginY + 22 + titleHeight + 10;
+
+
+        const rankColor = RANK_COLORS[quiz.rank] ?? PDF_COLORS.accent;
+        const rankLabel = quiz.rank ?? "Unranked";
+        doc.font(PDF_FONTS.bold).fontSize(10);
+        const rankW = doc.widthOfString(rankLabel) + 22;
+        doc.save().roundedRect(marginX + 10, afterTitleY, rankW, 22, 5)
+            .fillColor(rankColor).fillOpacity(0.15).fill().restore();
+        doc
+            .fillColor(rankColor).fillOpacity(1)
+            .font(PDF_FONTS.bold).fontSize(10)
+            .text(rankLabel, marginX + 21, afterTitleY + 6, { lineBreak: false });
+
+        // Total questions badge
+        const totalLabel = `${quiz.questions.length} Questions`;
+        doc.font(PDF_FONTS.bold).fontSize(10);
+        const totalW = doc.widthOfString(totalLabel) + 22;
+        const totalX = marginX + 10 + rankW + 8;
+        doc.save().roundedRect(totalX, afterTitleY, totalW, 22, 5)
+            .fillColor(PDF_COLORS.accentSoft).fillOpacity(0.12).fill().restore();
+        doc
+            .fillColor(PDF_COLORS.accentSoft).fillOpacity(1)
+            .font(PDF_FONTS.bold).fontSize(10)
+            .text(totalLabel, totalX + 11, afterTitleY + 6, { lineBreak: false });
+
+
+        // ── Description ───────────────────────────────────────────────────────
+        let cursorY = HEADER_H + 20;
+        doc.rect(marginX, cursorY, contentWidth, 1).fillColor(PDF_COLORS.border).fillOpacity(1).fill();
+
+        doc
+            .fillColor(PDF_COLORS.accentSoft).fillOpacity(1)
+            .font(PDF_FONTS.bold).fontSize(11)
+            .text("DESCRIPTION", marginX, cursorY + 12, { characterSpacing: 1 });
+
+        doc
+            .fillColor(PDF_COLORS.textSecondary).fillOpacity(1)
+            .font(PDF_FONTS.body).fontSize(11)
+            .text(quiz.description, marginX, cursorY + 30, { width: contentWidth, lineGap: 4 });
+
+        // ── Questions section ─────────────────────────────────────────────────
+        cursorY = doc.y + 22;
+        doc.rect(marginX, cursorY, contentWidth, 1).fillColor(PDF_COLORS.border).fillOpacity(1).fill();
+
+        doc
+            .fillColor(PDF_COLORS.accentSoft).fillOpacity(1)
+            .font(PDF_FONTS.bold).fontSize(11)
+            .text("QUESTIONS", marginX, cursorY + 12, { characterSpacing: 1 });
+
+        cursorY += 32;
+
+        if (quiz.questions.length === 0) {
+            drawRoundedRect(doc, marginX, cursorY, contentWidth, 50, 8, PDF_COLORS.surface);
+            doc
+                .fillColor(PDF_COLORS.textMuted).fillOpacity(1)
+                .font(PDF_FONTS.body).fontSize(11)
+                .text("No questions have been added to this quiz yet.", marginX, cursorY + 18, {
+                    width: contentWidth,
+                    align: "center",
+                });
+        }
+
+        for (let i = 0; i < quiz.questions.length; i++) {
+            const q = quiz.questions[i];
+            const options = q.options;
+
+            // Measure card height
+            doc.font(PDF_FONTS.bold).fontSize(11);
+            const questionH = doc.heightOfString(q.question, { width: contentWidth - 60 });
+            const optionsH = options.length * 20;
+            const answerH = 20;
+            const cardHeight = Math.max(70, questionH + optionsH + answerH + 36);
+
+            // Page break
+            if (cursorY + cardHeight > pageHeight - marginY - 30) {
+                doc.addPage();
+                fillBackground(doc);
+                cursorY = marginY;
+            }
+
+            // Card background
+            drawRoundedRect(doc, marginX, cursorY, contentWidth, cardHeight, 8, PDF_COLORS.surface);
+
+            // Left accent stripe
+            doc.rect(marginX, cursorY, 4, cardHeight).fillColor(PDF_COLORS.accent).fillOpacity(1).fill();
+
+            // Question number circle
+            const circleX = marginX + 26;
+            const circleY = cursorY + 26;
+            doc.save().circle(circleX, circleY, 13)
+                .fillColor(PDF_COLORS.accent).fillOpacity(0.15).fill().restore();
+            doc
+                .fillColor(PDF_COLORS.accent).fillOpacity(1)
+                .font(PDF_FONTS.bold).fontSize(11)
+                .text(`${i + 1}`, circleX - (i >= 9 ? 5 : 3), circleY - 7, { lineBreak: false });
+
+            // Question text
+            const questionTextX = marginX + 50;
+            const questionTextW = contentWidth - 58;
+            doc
+                .fillColor(PDF_COLORS.textPrimary).fillOpacity(1)
+                .font(PDF_FONTS.bold).fontSize(11)
+                .text(q.question, questionTextX, cursorY + 14, { width: questionTextW });
+
+            let innerY = cursorY + 14 + questionH + 10;
+
+            // Options
+            const optionLetters = ["A", "B", "C", "D"];
+            for (let j = 0; j < options.length; j++) {
+                const optLabel = optionLetters[j] ?? String(j + 1);
+                const isAnswer = options[j] === q.answer;
+
+                // Option pill background
+                const optW = contentWidth - 60;
+                drawRoundedRect(doc, questionTextX, innerY, optW, 17, 4,
+                    isAnswer ? PDF_COLORS.answerAccent : PDF_COLORS.optionBg,
+                    isAnswer ? 0.18 : 1
+                );
+
+                // Letter label
+                doc
+                    .fillColor(isAnswer ? PDF_COLORS.textPrimary : PDF_COLORS.textMuted)
+                    .fillOpacity(1)
+                    .font(PDF_FONTS.bold).fontSize(9)
+                    .text(optLabel, questionTextX + 7, innerY + 4, { lineBreak: false });
+
+                // Option text
+                doc
+                    .fillColor(isAnswer ? PDF_COLORS.textPrimary : PDF_COLORS.textSecondary)
+                    .fillOpacity(1)
+                    .font(PDF_FONTS.body).fontSize(9)
+                    .text(options[j], questionTextX + 22, innerY + 4, { lineBreak: false });
+
+                innerY += 21;
+            }
+
+
+
+            cursorY += cardHeight + 10;
+        }
+
+        // ── Footer on every page ──────────────────────────────────────────────
+        const pageCount = doc.bufferedPageRange().count;
+        for (let p = 0; p < pageCount; p++) {
+            doc.switchToPage(p);
+            doc.rect(0, pageHeight - 36, pageWidth, 36)
+                .fillColor(PDF_COLORS.surface).fillOpacity(1).fill();
+            doc.rect(0, pageHeight - 36, pageWidth, 1)
+                .fillColor(PDF_COLORS.border).fillOpacity(1).fill();
+            doc
+                .fillColor(PDF_COLORS.textMuted).fillOpacity(1)
+                .font(PDF_FONTS.body).fontSize(8)
+                .text("MERN Roadmap Platform  •  Quiz Export", marginX, pageHeight - 22, { lineBreak: false });
+            doc
+                .fillColor(PDF_COLORS.textMuted).fillOpacity(1)
+                .font(PDF_FONTS.body).fontSize(8)
+                .text(`Page ${p + 1} of ${pageCount}`, pageWidth - marginX - 50, pageHeight - 22, { lineBreak: false });
+        }
+
+        doc.end();
+    } catch (error) {
+        console.error(error.message);
+        if (!res.headersSent)
+            return res.status(500).json({ success: false, message: error.message });
+    }
+};
+
+/**
+ * @swagger
+ * /api/v1/quiz/{id}/export/csv:
+ *   get:
+ *     summary: Export a quiz and its questions as a CSV file
+ *     tags: [Quizzes]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: The quiz ID to export
+ *     responses:
+ *       200:
+ *         description: CSV file download
+ *         content:
+ *           text/csv:
+ *             schema:
+ *               type: string
+ *               format: binary
+ *       404:
+ *         description: Quiz not found
+ *       500:
+ *         description: Server error
+ */
+export const exportQuizToCSV = async (req, res) => {
+    try {
+        const { id: quizId } = req.params;
+        const quiz = await Quiz.findById(quizId).populate("questions");
+
+        if (!quiz)
+            return res.status(404).json({ success: false, message: "Quiz not found." });
+
+        const rows = quiz.questions.length
+            ? quiz.questions.map((q, index) => ({
+                quiz_id: quiz._id.toString(),
+                quiz_title: quiz.title,
+                quiz_description: quiz.description,
+                quiz_rank: quiz.rank,
+                question_number: index + 1,
+                question: q.question,
+                options: (q.options ?? []).join(" | "),
+                answer: q.answer,
+            }))
+            : [
+                {
+                    quiz_id: quiz._id.toString(),
+                    quiz_title: quiz.title,
+                    quiz_description: quiz.description,
+                    quiz_rank: quiz.rank,
+                    question_number: "",
+                    question: "",
+                    options: "",
+                    answer: "",
+                },
+            ];
+
+        const fields = [
+            "quiz_id",
+            "quiz_title",
+            "quiz_description",
+            "quiz_rank",
+            "question_number",
+            "question",
+            "options",
+            "answer",
+        ];
+
+        const parser = new Parser({ fields });
+        const csv = parser.parse(rows);
+
+        const filename = `${quiz.title.replace(/\s+/g, "_")}_quiz.csv`;
+        res.setHeader("Content-Type", "text/csv");
+        res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
+        return res.status(200).send(csv);
+    } catch (error) {
+        console.error(error.message);
+        return res.status(500).json({ success: false, message: error.message });
+    }
+};

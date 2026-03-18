@@ -71,6 +71,18 @@ export const PDF_COLORS = {
     textSecondary: "#94A3B8",
     textMuted: "#64748B",
     border: "#2D3E55",
+    optionBg: "#1a2740",
+    answerAccent: "#5DCAA5",
+    answerBg: "#0D3D2E",
+};
+
+// Rank badge — rank is an enum string e.g. "Beginner", "Advanced"
+export const RANK_COLORS = {
+    Beginner: "#5DCAA5",
+    Intermediate: "#818CF8",
+    Advanced: "#C084FC",
+    Expert: "#F472B6",
+    Master: "#F59E0B",
 };
 
 export const roundedRect = (doc, x, y, w, h, r = 6) => {
@@ -189,6 +201,11 @@ export const drawConnector = (doc, x, fromY, toY) => {
         .dash(3, { space: 4 }).stroke()
         .restore();
 }
+
+export const fillBackground = (doc) => {
+    const { pageWidth, pageHeight } = PDF_SIZES;
+    doc.rect(0, 0, pageWidth, pageHeight).fillColor(PDF_COLORS.bg).fillOpacity(1).fill();
+};
 
 export const drawSectionCard = (doc, section, index, x, cardTop, cardW) => {
     const {

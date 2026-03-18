@@ -7,6 +7,9 @@ import {
     restartQuiz,
     deleteQuiz,
     updateQuiz,
+    exportQuizToCSV,
+    exportQuizToJSON,
+    exportQuizToPDF
 } from '../controllers/quiz.controllers.js';
 import { isAdmin, verifyToken, isIdValid } from '../middleware/middlewares.js';
 import {
@@ -19,14 +22,20 @@ import {
 
 const router = express.Router();
 
-router.get('/', getAllQuizData)
+router.route('/')
+    .get(getAllQuizData)
+    .post(verifyToken, isAdmin, createQuiz)
 
 router.route('/:id')
     .get(isIdValid, getSpecificQuiz)
     .delete(isIdValid, verifyToken, isAdmin, deleteQuiz)
     .put(isIdValid, verifyToken, isAdmin, updateQuiz)
 
-router.post('/', verifyToken, isAdmin, createQuiz)
+router.get('/:id/export/json', isIdValid, verifyToken, exportQuizToJSON)
+
+router.get('/:id/export/pdf', isIdValid, verifyToken, exportQuizToPDF)
+
+router.get('/:id/export/csv', isIdValid, verifyToken, exportQuizToCSV)
 
 router.post('/:quizId/questions/submit', verifyToken, submitAnswers)
 
