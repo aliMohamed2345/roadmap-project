@@ -348,6 +348,9 @@ Rules: title 3–100 chars, description 10–1,000 chars.
 | `GET` | `/quiz/:id` | Get quiz; add `?question=N` for a specific question | `Public` |
 | `PUT` | `/quiz/:id` | Update quiz | `Admin` |
 | `DELETE` | `/quiz/:id` | Delete quiz + all questions + user refs | `Admin` |
+| `GET` | `/quiz/:id/export/json` | Download quiz + questions as `.json` | `Auth` |
+| `GET` | `/quiz/:id/export/pdf` | Download quiz + questions as styled `.pdf` | `Auth` |
+| `GET` | `/quiz/:id/export/csv` | Download quiz + questions as `.csv` | `Auth` |
 | `GET` | `/quiz/:quizId/questions` | Get questions (paginated or random) | `Auth` |
 | `POST` | `/quiz/:quizId/questions` | Add question to quiz | `Admin` |
 | `GET` | `/quiz/:quizId/questions/:questionId` | Get single question | `Auth` |
@@ -355,6 +358,23 @@ Rules: title 3–100 chars, description 10–1,000 chars.
 | `DELETE` | `/quiz/:quizId/questions/:questionId` | Delete question | `Admin` |
 | `POST` | `/quiz/:quizId/questions/submit` | Submit answers → grade + save to profile | `Auth` |
 | `GET` | `/quiz/:quizId/questions/restart` | Reset attempt from user progress | `Auth` |
+
+<details>
+<summary><b>Export routes — response formats</b></summary>
+
+All three export routes require authentication (`Auth`). Exported data includes the full question list with options and correct answers.
+
+| Route | Content-Type | Filename |
+|---|---|---|
+| `.../export/json` | `application/json` | `{quiz_title}_quiz_export.json` |
+| `.../export/pdf` | `application/pdf` | `{quiz_title}_quiz_export.pdf` |
+| `.../export/csv` | `text/csv` | `{quiz_title}_quiz_export.csv` |
+
+**PDF** renders a dark-themed document with each question as a card, options listed as A/B/C/D pills, and the correct answer highlighted in cyan.  
+**CSV** columns: `quiz_id · quiz_title · quiz_description · quiz_rank · question_number · question · options · answer`  
+(`options` joined as `"A | B | C | D"`)
+
+</details>
 
 <details>
 <summary><b>POST /quiz</b> — Request body</summary>
@@ -452,11 +472,30 @@ Rules: exactly 4 unique options, `answer` must match one of the options exactly.
 | `GET` | `/project/:projectId` | Get specific project | `Auth` |
 | `PUT` | `/project/:projectId` | Update project | `Admin` |
 | `DELETE` | `/project/:projectId` | Delete project | `Admin` |
+| `GET` | `/project/:projectId/export/json` | Download project + steps as `.json` | `Public` |
+| `GET` | `/project/:projectId/export/pdf` | Download project + steps as styled `.pdf` | `Public` |
+| `GET` | `/project/:projectId/export/csv` | Download project + steps as `.csv` | `Public` |
 | `GET` | `/project/:projectId/steps` | Get all steps | `Auth` |
 | `POST` | `/project/:projectId/steps` | Add steps (1–10 at once) | `Admin` |
 | `PUT` | `/project/:projectId/steps/:stepId` | Update step title/description | `Admin` |
 | `PATCH` | `/project/:projectId/steps/:stepId` | Toggle `isCompleted` + update user progress | `Auth` |
 | `DELETE` | `/project/:projectId/steps/:stepId` | Delete step | `Admin` |
+
+> ℹ️ **Project export routes are public** — no authentication required. `isCompleted` is excluded from all export formats to protect user progress privacy.
+
+<details>
+<summary><b>Export routes — response formats</b></summary>
+
+| Route | Content-Type | Filename |
+|---|---|---|
+| `.../export/json` | `application/json` | `{project_title}_export.json` |
+| `.../export/pdf` | `application/pdf` | `{project_title}_export.pdf` |
+| `.../export/csv` | `text/csv` | `{project_title}_export.csv` |
+
+**PDF** renders a dark-themed document with a header (title, level badge, tags), description section, and each step as a numbered card.  
+**CSV** columns: `project_id · project_title · project_description · project_level · project_tags · step_number · step_title · step_description`
+
+</details>
 
 <details>
 <summary><b>POST /project</b> — Request body</summary>
