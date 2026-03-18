@@ -5,6 +5,9 @@ import {
     createProject,
     deleteSpecificProject,
     getAllProjects,
+    exportProjectToCSV,
+    exportProjectToJSON,
+    exportProjectToPDF
 } from "../controllers/project.controllers.js";
 import {
     getAllSteps,
@@ -26,9 +29,14 @@ router.route("/:projectId")
     .put(verifyToken, isAdmin, updateSpecificProject)
     .delete(verifyToken, isAdmin, deleteSpecificProject);
 
+router.get('/:projectId/export/json', exportProjectToJSON)
+router.get('/:projectId/export/pdf', exportProjectToPDF)
+router.get('/:projectId/export/csv', exportProjectToCSV)
+
 router.route('/:projectId/steps')
     .post(verifyToken, isAdmin, createStep)
     .get(verifyToken, getAllSteps)
+
 router.route("/:projectId/steps/:stepId")
     .put(verifyToken, isAdmin, updateStep)
     .patch(verifyToken, toggleStep)

@@ -39,6 +39,39 @@ export const LAYOUT = {
     paddingBottom: 16,   // last content   →  card bottom edge
 };
 
+export const PDF_SIZES = {
+    pageWidth: 595.28,
+    pageHeight: 841.89,
+    marginX: 48,
+    marginY: 48,
+    contentWidth: 595.28 - 96,
+};
+
+export const LEVEL_COLORS = {
+    Beginner: "#5DCAA5",
+    Intermediate: "#818CF8",
+    Advanced: "#C084FC",
+
+};
+export const PDF_FONTS = {
+    heading: "Helvetica-Bold",
+    body: "Helvetica",
+    bold: "Helvetica-Bold",
+};
+export const PDF_COLORS = {
+    bg: "#0F172A",
+    surface: "#1E293B",
+    surfaceLight: "#334155",
+    accent: "#6366F1",
+    accentSoft: "#818CF8",
+    success: "#22C55E",
+    warning: "#F59E0B",
+    danger: "#EF4444",
+    textPrimary: "#F8FAFC",
+    textSecondary: "#94A3B8",
+    textMuted: "#64748B",
+    border: "#2D3E55",
+};
 
 export const roundedRect = (doc, x, y, w, h, r = 6) => {
     doc
@@ -53,6 +86,19 @@ export const roundedRect = (doc, x, y, w, h, r = 6) => {
         .quadraticCurveTo(x, y, x + r, y)
         .closePath();
 }
+
+export const drawRoundedRect = (doc, x, y, w, h, r, fill, stroke = null) => {
+    doc.save();
+    doc.roundedRect(x, y, w, h, r);
+    if (fill) doc.fillColor(fill);
+    if (stroke) {
+        doc.strokeColor(stroke).lineWidth(1);
+        fill ? doc.fillAndStroke() : doc.stroke();
+    } else {
+        doc.fill();
+    }
+    doc.restore();
+};
 
 export const measureCardHeight = (doc, section, cardW) => {
     const { paddingTop, circleR, paddingBelowCircle,

@@ -61,7 +61,7 @@ app.use('/api/v1/quiz', quizRoutes);
 app.use('/api/v1/roadmap', roadmapRoutes);
 app.use('/api/v1/project', projectRoutes)
 app.get('/', (req, res) => {
-    res.status(200).json({ message: 'Server is running' });
+    res.status(200).json({ success: true, message: 'Server is running' });
 });
 
 //error handlers 
