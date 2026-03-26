@@ -17,7 +17,6 @@ import quizRoutes from '../routes/quiz.routes.js';
 import roadmapRoutes from '../routes/roadmap.routes.js';
 import projectRoutes from '../routes/project.routes.js';
 import { checkApiKey } from '../middleware/middlewares.js';
-
 // Error handlers
 import { globalErrorHandler, notFoundHandler } from '../lib/errorHandlers.js';
 dotenv.config();

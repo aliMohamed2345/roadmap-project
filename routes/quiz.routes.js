@@ -9,7 +9,8 @@ import {
     updateQuiz,
     exportQuizToCSV,
     exportQuizToJSON,
-    exportQuizToPDF
+    exportQuizToPDF,
+
 } from '../controllers/quiz.controllers.js';
 import { isAdmin, verifyToken, isIdValid } from '../middleware/middlewares.js';
 import {
@@ -17,7 +18,8 @@ import {
     deleteSpecificQuestion,
     getAllQuestionsFromQuiz,
     getSpecificQuestion,
-    updateSpecificQuestion
+    updateSpecificQuestion,
+    createMultipleQuestions
 } from '../controllers/question.controllers.js';
 
 const router = express.Router();
@@ -44,6 +46,8 @@ router.get('/:quizId/questions/restart', verifyToken, restartQuiz)
 router.route('/:quizId/questions')
     .post(verifyToken, isAdmin, createQuestion)
     .get(verifyToken, getAllQuestionsFromQuiz)
+
+router.post('/:quizId/questions/bulk', verifyToken, isAdmin, createMultipleQuestions)
 
 router.route('/:quizId/questions/:questionId')
     .get(verifyToken, getSpecificQuestion)

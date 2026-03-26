@@ -2,6 +2,7 @@ import { validateCreationQuestionData, validateQuestionData, validateQuestionQue
 import Question from "../models/question.model.js";
 import Quiz from "../models/quiz.model.js";
 import mongoose from 'mongoose'
+
 /**
  * @swagger
  * /api/v1/quiz/{quizId}/questions:
@@ -309,6 +310,134 @@ export const deleteSpecificQuestion = async (req, res) => {
         );
 
         return res.status(200).json({ success: true, message: `Question deleted successfully` })
+    } catch (error) {
+        console.error(error.message)
+        return res.status(500).json({ success: false, message: error.message })
+    }
+}
+
+/**
+ * @swagger
+ * /api/v1/quiz/{quizId}/questions/bulk:
+ *   post:
+ *     summary: Create multiple questions at once
+ *     tags: [Questions]
+ *     parameters:
+ *       - in: path
+ *         name: quizId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Quiz ID
+ *       - in: query
+ *         name: key
+ *         required: true
+ *         description: API key required to access this endpoint
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               questions:
+ *                 type: array
+ *                 items:
+ *                   type: object
+ *                   required: [question, answer, options]
+ *                   properties:
+ *                     question:
+ *                       type: string
+ *                     answer:
+ *                       type: string
+ *                     options:
+ *                       type: array
+ *                       items:
+ *                         type: string
+ *     responses:
+ *       201:
+ *         description: Questions created successfully
+ *       400:
+ *         description: Invalid input or quiz ID
+ *       404:
+ *         description: Quiz not found
+ *       500:
+ *         description: Internal server error
+ */
+export const createMultipleQuestions = async (req, res) => {
+
+    try {
+        const { quizId } = req.params;
+        const { questions } = req.body;
+
+
+        // Check if questions array exists and is not empty
+        if (!questions || !Array.isArray(questions) || questions.length === 0) {
+            return res.status(400).json({
+                success: false,
+                message: "Questions array is required and cannot be empty"
+            });
+        }
+
+        // Validate each question
+        for (let i = 0; i < questions.length; i++) {
+            const { question, answer, options } = questions[i];
+            const { isValid, message } = validateCreationQuestionData(question, answer, options);
+
+            if (!isValid) {
+                return res.status(400).json({
+                    success: false,
+                    message: `Validation failed for question at index ${i}: ${message}`
+                });
+            }
+        }
+        questions.map((questionItem) => {
+            const { question, answer, options } = questionItem;
+            const { isValid, message } = validateCreationQuestionData(question, answer, options);
+
+            if (!isValid) {
+                return res.status(400).json({
+                    success: false,
+                    message: `Validation failed for question at index ${i}: ${message}`
+                });
+            }
+        })
+
+        // Check if quiz exists
+        const isQuizExist = await Quiz.findById(quizId);
+        if (!isQuizExist) {
+            return res.status(404).json({
+                success: false,
+                message: "Quiz not found"
+            });
+        }
+
+        // Prepare questions with quizId
+        const questionsToCreate = questions.map(q => ({
+            ...q,
+            quizId: new mongoose.Types.ObjectId(quizId)
+        }));
+
+        // Bulk create questions
+        const createdQuestions = await Question.insertMany(questionsToCreate);
+
+        // Update quiz with all new question IDs
+        const questionIds = createdQuestions.map(q => q._id);
+
+        await Quiz.findByIdAndUpdate(
+            quizId,
+            { $push: { questions: { $each: questionIds } } }
+        );
+
+        return res.status(201).json({
+            success: true,
+            message: `${createdQuestions.length} questions created successfully`,
+            count: createdQuestions.length,
+            questions: createdQuestions
+        });
+
     } catch (error) {
         console.error(error.message)
         return res.status(500).json({ success: false, message: error.message })
