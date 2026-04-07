@@ -25,7 +25,7 @@ router.route("/")
     .post(verifyToken, isAdmin, createProject);
 
 router.route("/:projectId")
-    .get(verifyToken, getSpecificProject)
+    .get(getSpecificProject)
     .put(verifyToken, isAdmin, updateSpecificProject)
     .delete(verifyToken, isAdmin, deleteSpecificProject);
 

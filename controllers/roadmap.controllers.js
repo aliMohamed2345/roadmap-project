@@ -434,7 +434,16 @@ export const exportRoadmapToPDF = async (req, res) => {
             return res.status(404).json({ success: false, message: "Roadmap not found" });
         }
 
-        const doc = new PDFDocument({ margin: 0, size: "A4" });
+        const doc = new PDFDocument({
+            margin: 0,
+            size: "A4",
+            bufferPages: true,
+            info: {
+                Title: roadmap.title,
+                Author: "MERN Roadmap Platform",
+                Subject: "Roadmap Export",
+            },
+        })
 
         res.setHeader("Content-Type", "application/pdf");
         res.setHeader("Content-Disposition", `attachment; filename="${roadmap.title}.pdf"`);

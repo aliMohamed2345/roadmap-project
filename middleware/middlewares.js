@@ -58,18 +58,33 @@ export const isIdValid = (req, res, next) => {
  */
 export const checkApiKey = (req, res, next) => {
     try {
-        const { key } = req.query;
-        if (!key) return res.status(401).json({ success: false, message: "Unauthorized: no api key provided" });
-        if (key !== process.env.API_KEY) return res.status(401).json({ success: false, message: "Unauthorized: invalid api key" });
+        // Get API key from custom header 'x-api-key'
+        const apiKey = req.headers['x-api-key'];
+
+        if (!apiKey) {
+            return res.status(401).json({
+                success: false,
+                message: "Unauthorized: No API key provided. Please send x-api-key header."
+            });
+        }
+
+        if (apiKey !== process.env.API_KEY) {
+            return res.status(401).json({
+                success: false,
+                message: "Unauthorized: Invalid API key"
+            });
+        }
+
         next();
 
     } catch (error) {
-        console.error("Api key error:", error.message);
-        return res
-            .status(401)
-            .json({ success: false, message: `Invalid or api key:${error.message}` });
+        console.error("API key middleware error:", error.message);
+        return res.status(500).json({
+            success: false,
+            message: "Internal server error while validating API key"
+        });
     }
-}
+};
 
 // Memory storage
 const storage = multer.memoryStorage();
