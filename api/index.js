@@ -48,15 +48,13 @@ app.use(cookieParser());
 
 //add api documentation using swagger
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec, { explorer: true }));
-// Check API key middleware
-app.use(checkApiKey);
 
 //routes
 app.use('/api/v1/auth', authRoutes);
-app.use('/api/v1/users', usersRoutes);
-app.use('/api/v1/quiz', quizRoutes);
-app.use('/api/v1/roadmap', roadmapRoutes);
-app.use('/api/v1/project', projectRoutes)
+app.use('/api/v1/users', checkApiKey, usersRoutes);
+app.use('/api/v1/quiz', checkApiKey, quizRoutes);
+app.use('/api/v1/roadmap', checkApiKey, roadmapRoutes);
+app.use('/api/v1/project', checkApiKey, projectRoutes)
 app.get('/', (req, res) => {
     res.status(200).json({ success: true, message: 'Server is running' });
 });
