@@ -1,4 +1,4 @@
-import { validateQuizData } from "../utils/validateQuestionData.js";
+import { validateQuizData, validateUpdateQuizData } from "../utils/validateQuestionData.js";
 import Question from "../models/question.model.js";
 import Quiz from '../models/quiz.model.js'
 import User from "../models/user.model.js";
@@ -161,12 +161,12 @@ export const getSpecificQuiz = async (req, res) => {
  */
 export const createQuiz = async (req, res) => {
     try {
-        const { title, description, rank } = req.body;
+        const { title, description, rank, tags } = req.body;
         //validate the quiz data
-        const { isValid, message } = validateQuizData(title, description, rank)
+        const { isValid, message } = validateQuizData(title, description, rank, tags)
         if (!isValid) return res.status(400).json({ success: false, message })
 
-        const newQuiz = await Quiz.create({ title, description, rank });
+        const newQuiz = await Quiz.create({ title, description, rank, tags });
 
         return res.status(201).json({
             success: true,
@@ -421,16 +421,35 @@ export const deleteQuiz = async (req, res) => {
 export const updateQuiz = async (req, res) => {
     try {
         const { id } = req.params;
-        const { title, description, rank } = req.body;
+        const { title, description, rank, tags } = req.body;
 
         //validate the quiz data 
-        const { isValid, message } = validateQuizData(title, description, rank)
+        const { isValid, message } = validateUpdateQuizData(title, description, rank, tags)
         if (!isValid) return res.status(400).json({ success: false, message })
 
         const isQuizExist = await Quiz.findById(id)
         if (!isQuizExist) return res.status(404).json({ success: false, message: `Quiz not found` })
 
-        const updatedQuiz = await Quiz.findByIdAndUpdate(id, { title, description, rank }, { new: true })
+        const updatedData = {}
+
+        if (title !== undefined) {
+            updatedData.title = title.trim()
+        }
+
+        if (description !== undefined) {
+            updatedData.description =
+                description.trim()
+        }
+
+        if (rank !== undefined) {
+            updatedData.rank = rank
+        }
+
+        if (tags !== undefined) {
+            updatedData.tags = tags
+        }
+
+        const updatedQuiz = await Quiz.findByIdAndUpdate(id, updatedData, { new: true })
 
         return res.status(200).json({ success: true, message: "Quiz updated successfully.", updatedQuiz });
     } catch (error) {

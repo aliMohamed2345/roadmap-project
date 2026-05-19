@@ -2,7 +2,7 @@ import Roadmap from './../models/roadmap.model.js'
 import Section from '../models/section.model.js'
 import Resource from '../models/resource.model.js'
 import User from '../models/user.model.js'
-import { validateRoadmapData } from '../utils/validateRoadmapData.js'
+import { validateRoadmapData, validateUpdateRoadmapData } from '../utils/validateRoadmapData.js'
 import PDFDocument from 'pdfkit'
 import { Parser } from 'json2csv'
 import {
@@ -221,12 +221,12 @@ export const getSpecificRoadmap = async (req, res) => {
  */
 export const createRoadmap = async (req, res) => {
     try {
-        const { title, description } = req.body
+        const { title, description, tags } = req.body
 
-        const { isValid, message } = validateRoadmapData(title, description)
+        const { isValid, message } = validateRoadmapData(title, description, tags)
         if (!isValid) return res.status(400).json({ success: false, message })
 
-        const roadmap = await Roadmap.create({ title, description })
+        const roadmap = await Roadmap.create({ title, description, tags })
 
         return res.status(201).json({ success: true, message: "Roadmap created successfully", roadmap });
     } catch (error) {
@@ -268,12 +268,18 @@ export const updateRoadmap = async (req, res) => {
     try {
         const { id } = req.params
 
-        const { title, description } = req.body;
+        const { title, description, tags } = req.body;
 
-        const { isValid, message } = validateRoadmapData(title, description)
+        const { isValid, message } = validateUpdateRoadmapData(title, description, tags)
         if (!isValid) return res.status(400).json({ success: false, message })
 
-        const roadmap = await Roadmap.findByIdAndUpdate(id, { title, description }, { new: true });
+        const updatedData = {}
+
+        if (title !== undefined) updatedData.title = title
+        if (description !== undefined) updatedData.description = description
+        if (tags !== undefined) updatedData.tags = tags
+
+        const roadmap = await Roadmap.findByIdAndUpdate(id, updatedData, { new: true });
 
         if (!roadmap) return res.status(404).json({ success: false, message: "Roadmap not found" })
 

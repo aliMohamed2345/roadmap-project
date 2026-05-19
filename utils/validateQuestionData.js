@@ -54,7 +54,7 @@ export const validateCreationQuestionData = (question, answer, options) => {
     return { isValid: true, message: "" };
 };
 
-export const validateQuizData = (title, description, rank) => {
+export const validateQuizData = (title, description, rank, tags) => {
     const allRanks = ["Beginner", "Intermediate", "Advanced", "Expert", "Master"]
 
     if (!title || !description)
@@ -68,8 +68,182 @@ export const validateQuizData = (title, description, rank) => {
     const wordCount = description.trim().split(/\s+/).length;
     if (wordCount < 5 || wordCount > 50)
         return { isValid: false, message: 'Description must be between 5 and 50 words.' };
+    if (!tags) {
+        return {
+            isValid: false,
+            message: "Tags are required."
+        }
+    }
+
+    if (!Array.isArray(tags)) {
+        return {
+            isValid: false,
+            message: "Tags must be an array."
+        }
+    }
+
+    if (tags.length < 1) {
+        return {
+            isValid: false,
+            message: "At least one tag is required."
+        }
+    }
+
+    if (tags.length > 10) {
+        return {
+            isValid: false,
+            message: "Maximum 10 tags are allowed."
+        }
+    }
+
+    for (const tag of tags) {
+
+        if (typeof tag !== "string") {
+            return {
+                isValid: false,
+                message: "Each tag must be a string."
+            }
+        }
+
+        if (tag.trim().length < 2) {
+            return {
+                isValid: false,
+                message:
+                    "Each tag must be at least 2 characters."
+            }
+        }
+
+        if (tag.trim().length > 20) {
+            return {
+                isValid: false,
+                message:
+                    "Tag cannot exceed 20 characters."
+            }
+        }
+    }
 
     return { isValid: true, message: "" };
+}
+
+export const validateUpdateQuizData = (title,description,rank,tags) => {
+
+    const allRanks = [
+        "Beginner",
+        "Intermediate",
+        "Advanced",
+        "Expert",
+        "Master"
+    ]
+
+
+    if (title !== undefined) {
+        if (typeof title !== "string") {
+            return {
+                isValid: false,
+                message: "Title must be a string."
+            }
+        }
+        if (title.trim().length < 3) {
+            return {
+                isValid: false,
+                message: "Title must be at least 3 characters."
+            }
+        }
+        if (title.trim().length > 100) {
+            return {
+                isValid: false,
+                message: "Title cannot exceed 100 characters."
+            }
+        }
+    }
+
+
+    if (description !== undefined) {
+
+        if (typeof description !== "string") {
+            return {
+                isValid: false,
+                message: "Description must be a string."
+            }
+        }
+
+        const wordCount =
+            description.trim().split(/\s+/).length
+
+        if (wordCount < 5 || wordCount > 50) {
+            return {
+                isValid: false,
+                message:
+                    "Description must be between 5 and 50 words."
+            }
+        }
+    }
+
+    if (rank !== undefined) {
+
+        if (!allRanks.includes(rank)) {
+            return {
+                isValid: false,
+                message:
+                    `Rank must be one of: ${allRanks.join(", ")}`
+            }
+        }
+    }
+
+    if (tags !== undefined) {
+
+        if (!Array.isArray(tags)) {
+            return {
+                isValid: false,
+                message: "Tags must be an array."
+            }
+        }
+
+        if (tags.length < 1) {
+            return {
+                isValid: false,
+                message: "At least one tag is required."
+            }
+        }
+
+        if (tags.length > 10) {
+            return {
+                isValid: false,
+                message: "Maximum 10 tags are allowed."
+            }
+        }
+
+        for (const tag of tags) {
+
+            if (typeof tag !== "string") {
+                return {
+                    isValid: false,
+                    message: "Each tag must be a string."
+                }
+            }
+
+            if (tag.trim().length < 2) {
+                return {
+                    isValid: false,
+                    message:
+                        "Each tag must be at least 2 characters."
+                }
+            }
+
+            if (tag.trim().length > 20) {
+                return {
+                    isValid: false,
+                    message:
+                        "Tag cannot exceed 20 characters."
+                }
+            }
+        }
+    }
+
+    return {
+        isValid: true,
+        message: ""
+    }
 }
 
 export const validateQuestionQueryString = ({
