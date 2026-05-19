@@ -3,10 +3,11 @@ import mongoose from "mongoose";
 
 
 const quizSchema = mongoose.Schema({
-    title: { type: String, require: true },
-    description: { type: String, require: true },
+    title: { type: String, required: true },
+    description: { type: String, required: true },
     questions: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Question' }],
-    rank: { type: String, enum: ["Beginner", "Intermediate", "Advanced", "Expert", "Master"], default:"Beginner" },
+    tags: [String],
+    rank: { type: String, enum: ["Beginner", "Intermediate", "Advanced", "Expert", "Master"], default: "Beginner" },
 }, { timestamps: true })
 
 

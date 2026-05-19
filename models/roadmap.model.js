@@ -4,12 +4,13 @@ import mongoose from "mongoose";
 const roadmapSchema = mongoose.Schema({
     title: {
         type: String,
-        require: true,
+        required: true,
     },
     description: {
         type: String,
-        require: true,
+        required: true,
     },
+    tags: [String],
     sections: [{ type: mongoose.Schema.Types.ObjectId, ref: "Section" }]
 
 }, { timestamps: true })

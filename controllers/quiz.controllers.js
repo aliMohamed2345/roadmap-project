@@ -836,3 +836,93 @@ export const exportQuizToCSV = async (req, res) => {
         return res.status(500).json({ success: false, message: error.message });
     }
 };
+
+
+/**
+ * @swagger
+ * /api/v1/quiz/{quizId}/recommended:
+ *   get:
+ *     summary: Get recommended quiz based on shared tags
+ *     tags: [Quizzes]
+ *     parameters:
+ *       - in: path
+ *         name: quizId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: The ID of the quiz to base recommendations on
+ *     responses:
+ *       200:
+ *         description: List of recommended quizzes retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 recommendedQuizzes:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       _id:
+ *                         type: string
+ *                       title:
+ *                         type: string
+ *                       description:
+ *                         type: string
+ *                       level:
+ *                         type: string
+ *                       tags:
+ *                         type: array
+ *                         items:
+ *                           type: string
+ *       400:
+ *         description: Invalid quiz ID format
+ *       404:
+ *         description: Quiz not found or no related quizzes exist
+ *       500:
+ *         description: Internal server error
+ */
+export const getRecommendedQuizzes = async (req, res) => {
+
+    try {
+        const { id: quizId } = req.params
+
+        const quiz = await Quiz.findById(quizId);
+
+        //check if the quiz with the given id exists
+        if (!quiz) {
+            return res.status(404).json({
+                success: false,
+                message: "Quiz not found"
+            });
+        }
+
+        const recommendedQuizzes = await Quiz.find(
+            {
+                tags: { $in: quiz.tags },
+                //make sure to not return the current quiz id 
+                _id: { $ne: quizId }
+            }
+        ).select("-__v")
+
+        //checking if there are recommended quiz
+        if (!recommendedQuizzes || recommendedQuizzes.length === 0) {
+            return res.status(404).json({ success: false, message: `No recommended quizzes found!` })
+        }
+
+        return res.status(200).json({
+            success: true,
+            message: `Recommended quizzes fetched successfully`,
+            quizNumber: recommendedQuizzes.length,
+            recommendedQuizzes
+        })
+
+    } catch (error) {
+        console.error(error.message);
+        return res.status(500).json({ success: false, message: error.message });
+    }
+}

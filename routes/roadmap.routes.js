@@ -8,11 +8,12 @@ import {
     getUserRoadmapProgress,
     exportRoadmapToJSON,
     exportRoadmapToPDF,
-    exportRoadmapToCSV
+    exportRoadmapToCSV,
+    getRecommendedRoadmaps
 } from "../controllers/roadmap.controllers.js";
 
 import {
-    checkApiKey,
+
     isAdmin,
     isIdValid,
     verifyToken
@@ -38,40 +39,41 @@ import {
 const router = express.Router()
 
 //Roadmap
-router.get("/", checkApiKey, getAllRoadmapData)
+router.get("/", getAllRoadmapData)
 
-router.post('/', checkApiKey, verifyToken, isAdmin, createRoadmap)
+router.post('/', verifyToken, isAdmin, createRoadmap)
 
 router.route("/:id")
-    .get(checkApiKey, isIdValid, getSpecificRoadmap)
-    .delete(checkApiKey, isIdValid, verifyToken, isAdmin, deleteRoadmap)
-    .put(checkApiKey, isIdValid, verifyToken, isAdmin, updateRoadmap)
+    .get(isIdValid, getSpecificRoadmap)
+    .delete(isIdValid, verifyToken, isAdmin, deleteRoadmap)
+    .put(isIdValid, verifyToken, isAdmin, updateRoadmap)
 
-router.get('/:id/progress', checkApiKey, isIdValid, verifyToken, getUserRoadmapProgress)
-router.get('/:id/progress/export/json', checkApiKey, isIdValid, verifyToken, exportRoadmapToJSON)
-router.get('/:id/progress/export/pdf', checkApiKey, isIdValid, verifyToken, exportRoadmapToPDF)
-router.get('/:id/progress/export/csv', checkApiKey, isIdValid, verifyToken, exportRoadmapToCSV)
+router.get('/:id/recommended', isIdValid, getRecommendedRoadmaps)
+router.get('/:id/progress', isIdValid, verifyToken, getUserRoadmapProgress)
+router.get('/:id/progress/export/json', isIdValid, verifyToken, exportRoadmapToJSON)
+router.get('/:id/progress/export/pdf', isIdValid, verifyToken, exportRoadmapToPDF)
+router.get('/:id/progress/export/csv', isIdValid, verifyToken, exportRoadmapToCSV)
 
 //Sections 
 router.route('/:id/sections')
-    .get(checkApiKey, isIdValid, getAllRoadmapSections)
-    .post(checkApiKey, isIdValid, verifyToken, isAdmin, createSection)
+    .get(isIdValid, getAllRoadmapSections)
+    .post(isIdValid, verifyToken, isAdmin, createSection)
 
 router.route('/:id/sections/:sectionId')
-    .get(checkApiKey, isIdValid, getSectionData)
-    .put(checkApiKey, isIdValid, verifyToken, isAdmin, updateSection)
-    .delete(checkApiKey, isIdValid, verifyToken, isAdmin, deleteSection)
+    .get(isIdValid, getSectionData)
+    .put(isIdValid, verifyToken, isAdmin, updateSection)
+    .delete(isIdValid, verifyToken, isAdmin, deleteSection)
 
-router.post('/:id/sections/:sectionId/complete', checkApiKey, isIdValid, verifyToken, toggleCompletionSection)
+router.post('/:id/sections/:sectionId/complete', isIdValid, verifyToken, toggleCompletionSection)
 
 //Resources
 router.route('/:id/sections/:sectionId/resources')
-    .post(checkApiKey, isIdValid, verifyToken, isAdmin, createResource)
-    .get(checkApiKey, isIdValid, getAllSectionResources)
+    .post(isIdValid, verifyToken, isAdmin, createResource)
+    .get(isIdValid, getAllSectionResources)
 
 router.route('/:id/sections/:sectionId/resources/:resourceId')
-    .put(checkApiKey, isIdValid, verifyToken, isAdmin, updateResource)
-    .delete(checkApiKey, isIdValid, verifyToken, isAdmin, deleteResource)
-    .get(checkApiKey, isIdValid, getSpecificResource)
+    .put(isIdValid, verifyToken, isAdmin, updateResource)
+    .delete(isIdValid, verifyToken, isAdmin, deleteResource)
+    .get(isIdValid, getSpecificResource)
 
 export default router

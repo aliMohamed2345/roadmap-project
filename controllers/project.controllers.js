@@ -706,7 +706,7 @@ export const exportProjectToJSON = async (req, res) => {
 
 /**
  * @swagger
- * /api/v1/projects/{projectId}/recommended-projects:
+ * /api/v1/project/{projectId}/recommended:
  *   get:
  *     summary: Get recommended projects based on shared tags
  *     tags: [Projects]
@@ -746,7 +746,7 @@ export const exportProjectToJSON = async (req, res) => {
  *                         items:
  *                           type: string
  *       400:
- *         description: Invalid project ID format
+ *         description: Invalid Id
  *       404:
  *         description: Project not found or no related projects exist
  *       500:

@@ -558,3 +558,91 @@ export const exportRoadmapToCSV = async (req, res) => {
         return res.status(500).json({ success: false, message: error.message })
     }
 }
+
+/**
+ * @swagger
+ * /api/v1/roadmap/{roadmapId}/recommended:
+ *   get:
+ *     summary: Get recommended roadmap based on shared tags
+ *     tags: [Roadmaps]
+ *     parameters:
+ *       - in: path
+ *         name: roadmapId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: The ID of the roadmap to base recommendations on
+ *     responses:
+ *       200:
+ *         description: List of recommended roadmaps retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 recommendedRoadmaps:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       _id:
+ *                         type: string
+ *                       title:
+ *                         type: string
+ *                       description:
+ *                         type: string
+ *                       level:
+ *                         type: string
+ *                       tags:
+ *                         type: array
+ *                         items:
+ *                           type: string
+ *       400:
+ *         description: Invalid roadmap ID format
+ *       404:
+ *         description: Roadmap not found or no related roadmaps exist
+ *       500:
+ *         description: Internal server error
+ */
+export const getRecommendedRoadmaps = async (req, res) => {
+    try {
+        const { id: roadmapId } = req.params
+
+        const roadmap = await Roadmap.findById(roadmapId);
+
+        //check if the roadmap with the given id exists
+        if (!roadmap) {
+            return res.status(404).json({
+                success: false,
+                message: "Roadmap not found"
+            });
+        }
+
+        const recommendedRoadmaps = await Roadmap.find(
+            {
+                tags: { $in: roadmap.tags },
+                //make sure to not return the current roadmap id 
+                _id: { $ne: roadmapId }
+            }
+        ).select("-__v")
+
+        //checking if there are recommended roadmap
+        if (!recommendedRoadmaps || recommendedRoadmaps.length === 0) {
+            return res.status(404).json({ success: false, message: `No recommended roadmaps found!` })
+        }
+
+        return res.status(200).json({
+            success: true,
+            message: `Recommended roadmaps fetched successfully`,
+            roadmapNumber: recommendedRoadmaps.length,
+            recommendedRoadmaps
+        })
+
+    } catch (error) {
+        console.error(error.message)
+        return res.status(500).json({ success: false, message: error.message })
+    }
+}

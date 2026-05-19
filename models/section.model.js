@@ -3,11 +3,11 @@ import mongoose from "mongoose";
 const sectionSchema = mongoose.Schema({
     title: {
         type: String,
-        require: true,
+        required: true,
     },
     description: {
         type: String,
-        require: true,
+        required: true,
     },
     roadmapId: {
         type: mongoose.Schema.Types.ObjectId,

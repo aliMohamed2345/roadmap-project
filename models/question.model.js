@@ -1,8 +1,8 @@
 import mongoose from "mongoose";
 
 const questionSchema = mongoose.Schema({
-    question: { type: String, require: true },
-    answer: { type: String, require: true },
+    question: { type: String, required: true },
+    answer: { type: String, required: true },
     options: {
         type: [String],
         required: true,
