@@ -7,7 +7,8 @@ import {
     getAllProjects,
     exportProjectToCSV,
     exportProjectToJSON,
-    exportProjectToPDF
+    exportProjectToPDF,
+    getRecommendedProjects
 } from "../controllers/project.controllers.js";
 import {
     getAllSteps,
@@ -28,6 +29,9 @@ router.route("/:projectId")
     .get(getSpecificProject)
     .put(verifyToken, isAdmin, updateSpecificProject)
     .delete(verifyToken, isAdmin, deleteSpecificProject);
+
+router.get("/:projectId/recommended", getRecommendedProjects)
+
 
 router.get('/:projectId/export/json', exportProjectToJSON)
 router.get('/:projectId/export/pdf', exportProjectToPDF)

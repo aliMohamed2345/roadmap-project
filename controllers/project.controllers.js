@@ -13,6 +13,7 @@ import {
     PDF_COLORS,
     drawRoundedRect
 } from '../utils/PDFBuilder.js'
+import mongoose from "mongoose";
 /**
  * @swagger
  * /api/v1/projects:
@@ -701,3 +702,95 @@ export const exportProjectToJSON = async (req, res) => {
         return res.status(500).json({ success: false, message: error.message });
     }
 };
+
+
+/**
+ * @swagger
+ * /api/v1/projects/{projectId}/recommended-projects:
+ *   get:
+ *     summary: Get recommended projects based on shared tags
+ *     tags: [Projects]
+ *     parameters:
+ *       - in: path
+ *         name: projectId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: The ID of the project to base recommendations on
+ *     responses:
+ *       200:
+ *         description: List of recommended projects retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 recommendedProjects:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       _id:
+ *                         type: string
+ *                       title:
+ *                         type: string
+ *                       description:
+ *                         type: string
+ *                       level:
+ *                         type: string
+ *                       tags:
+ *                         type: array
+ *                         items:
+ *                           type: string
+ *       400:
+ *         description: Invalid project ID format
+ *       404:
+ *         description: Project not found or no related projects exist
+ *       500:
+ *         description: Internal server error
+ */
+export const getRecommendedProjects = async (req, res) => {
+
+    try {
+        const { projectId } = req.params
+
+        // Check if project id is valid
+        if (!mongoose.Types.ObjectId.isValid(projectId)) {
+            return res.status(400).json({ success: false, message: 'Invalid Id' });
+        }
+
+        const project = await Project.findById(projectId);
+
+        //check if the project with the given id exists
+        if (!project) {
+            return res.status(404).json({ success: false, message: `Project not found` })
+        }
+
+        const recommendedProjects = await Project.find(
+            {
+                tags: { $in: project.tags },
+                //make sure to not return the current project id 
+                _id: { $ne: projectId }
+            }
+        ).select("-__v")
+
+        //checking if there are recommended projects
+        if (!recommendedProjects || recommendedProjects.length === 0) {
+            return res.status(404).json({ success: false, message: `No recommended projects found!` })
+        }
+
+        return res.status(200).json({
+            success: true,
+            message: `Recommended projects fetched successfully`,
+            projectNumber: recommendedProjects.length,
+            recommendedProjects
+        })
+
+    } catch (error) {
+        console.log(error.message);
+        return res.status(500).json({ success: false, message: error.message })
+    }
+}
