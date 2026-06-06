@@ -2,6 +2,8 @@ import { validateCreationQuestionData, validateQuestionData, validateQuestionQue
 import Question from "../models/question.model.js";
 import Quiz from "../models/quiz.model.js";
 import mongoose from 'mongoose'
+import AI from "../lib/ai.js";
+import { generateQuestionsPrompt } from "../utils/prompts.js";
 
 /**
  * @swagger
@@ -443,3 +445,103 @@ export const createMultipleQuestions = async (req, res) => {
         return res.status(500).json({ success: false, message: error.message })
     }
 }
+
+export const generateAIQuestions = async (req, res) => {
+    try {
+        const { quizId } = req.params;
+        const {number:questionNumber}= req.body
+
+        // Validate question number
+        if (
+            isNaN(questionNumber) ||
+            questionNumber < 1 ||
+            questionNumber > 20
+        ) {
+            return res.status(400).json({
+                success: false,
+                message: "Number of questions should be between 1 and 20",
+            });
+        }
+
+        const quiz = await Quiz.findById(quizId)
+
+        if (!quiz) {
+            return res.status(404).json({
+                success: false,
+                message: "Quiz not found",
+            });
+        }
+
+        const prompt = generateQuestionsPrompt(
+            quiz.title,
+            questionNumber,
+        );
+
+        const aiResponse = await AI(prompt);
+
+        // Remove markdown if Gemini adds it
+        const cleanedResponse = aiResponse
+            .replace(/```json/g, "")
+            .replace(/```/g, "")
+            .trim();
+
+        let parsedResponse;
+
+        try {
+            parsedResponse = JSON.parse(cleanedResponse);
+        } catch (error) {
+            return res.status(500).json({
+                success: false,
+                message: "AI returned invalid JSON",
+            });
+        }
+
+        // Validate AI structure
+        if (
+            !parsedResponse.questions ||
+            !Array.isArray(parsedResponse.questions)
+        ) {
+            return res.status(500).json({
+                success: false,
+                message: "Invalid AI response structure",
+            });
+        }
+
+        const questionsToCreate = parsedResponse.questions.map((q) => ({
+            question: q.question,
+            options: q.options,
+            answer: q.answer,
+            quizId: quiz._id,
+        }));
+
+        // Insert questions
+        const createdQuestions = await Question.insertMany(
+            questionsToCreate
+        );
+
+        const questionIds = createdQuestions.map((q) => q._id);
+
+        // Update quiz
+        await Quiz.findByIdAndUpdate(quizId, {
+            $push: {
+                questions: {
+                    $each: questionIds,
+                },
+            },
+        });
+
+        return res.status(201).json({
+            success: true,
+            message: `${createdQuestions.length} questions created successfully`,
+            questionsNumber: createdQuestions.length,
+            questions: createdQuestions,
+        });
+    } catch (error) {
+        console.error(error);
+
+        return res.status(500).json({
+            success: false,
+            message: error.message,
+        });
+    }
+};
