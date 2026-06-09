@@ -1,6 +1,6 @@
 export const generateQuestionsPrompt = (
-    quizTitle,
-    numberOfQuestions = 1,
+  quizTitle,
+  numberOfQuestions = 1,
 ) => `
 You are an expert quiz generator.
 
@@ -33,3 +33,38 @@ Response format:
   ]
 }
 `;
+
+export const explainAnswerPrompt = (question, answers, correctAnswer) => {
+  return `
+  You are an expert educational assistant.
+
+Analyze the following multiple-choice question and explain why the correct answer is correct.
+
+Question:
+"${question}"
+
+Options:
+${JSON.stringify(answers, null, 2)}
+
+Correct Answer:
+"${correctAnswer}"
+
+Requirements:
+
+1. Explain clearly why the correct answer is correct.
+2. Keep the explanation concise (2-5 sentences).
+3. Use simple educational language.
+4. Do not explain why every wrong option is wrong unless necessary.
+5. Do not include markdown.
+6. Return ONLY valid JSON.
+7. Do not wrap the response inside code blocks.
+
+Response format:
+
+{
+"question": "${question}",
+"correctAnswer": "${correctAnswer}",
+"explanation": "Explanation of why the answer is correct."
+}
+`
+}

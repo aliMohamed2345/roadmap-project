@@ -3,7 +3,7 @@ import Question from "../models/question.model.js";
 import Quiz from "../models/quiz.model.js";
 import mongoose from 'mongoose'
 import AI from "../lib/ai.js";
-import { generateQuestionsPrompt } from "../utils/prompts.js";
+import { explainAnswerPrompt, generateQuestionsPrompt } from "../utils/prompts.js";
 
 /**
  * @swagger
@@ -446,10 +446,46 @@ export const createMultipleQuestions = async (req, res) => {
     }
 }
 
+/**
+ * @swagger
+ * /api/v1/quiz/{quizId}/questions/generate-questions:
+ *   post:
+ *     summary: Generate quiz questions using AI
+ *     tags: [Questions, AI]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: quizId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Quiz ID
+ *
+ *       - in: query
+ *         name: number
+ *         required: false
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *           minimum: 1
+ *           maximum: 20
+ *         description: Number of questions to generate
+ *
+ *     responses:
+ *       201:
+ *         description: Questions generated and added to the quiz successfully
+ *       400:
+ *         description: Invalid quiz ID or invalid number of questions
+ *       404:
+ *         description: Quiz not found
+ *       500:
+ *         description: AI generation failed or internal server error
+ */
 export const generateAIQuestions = async (req, res) => {
     try {
         const { quizId } = req.params;
-        const {number:questionNumber}= req.body
+        const questionNumber = +(req.query.number ?? 1);
 
         // Validate question number
         if (
@@ -535,6 +571,136 @@ export const generateAIQuestions = async (req, res) => {
             message: `${createdQuestions.length} questions created successfully`,
             questionsNumber: createdQuestions.length,
             questions: createdQuestions,
+        });
+    } catch (error) {
+        console.error(error);
+
+        return res.status(500).json({
+            success: false,
+            message: error.message,
+        });
+    }
+};
+
+/**
+ * @swagger
+ * /api/v1/quiz/{quizId}/questions/{questionId}/explain-question:
+ *   post:
+ *     summary: Generate an AI explanation for a question's correct answer
+ *     tags: [Questions, AI]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: quizId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Quiz ID
+ *
+ *       - in: path
+ *         name: questionId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Question ID
+ *
+ *     responses:
+ *       200:
+ *         description: Question explanation generated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: Question explained successfully
+ *                 question:
+ *                   type: string
+ *                   example: What is Node.js?
+ *                 correctAnswer:
+ *                   type: string
+ *                   example: A JavaScript runtime environment
+ *                 explanation:
+ *                   type: string
+ *                   example: Node.js allows JavaScript to run outside the browser using Google's V8 engine.
+ *
+ *       400:
+ *         description: Invalid question ID
+ *       404:
+ *         description: Question not found
+ *       500:
+ *         description: AI explanation failed or internal server error
+ */
+export const explainQuestionAI = async (req, res) => {
+    try {
+        const { questionId } = req.params;
+
+        if (!mongoose.Types.ObjectId.isValid(questionId)) {
+            return res.status(400).json({
+                success: false,
+                message: "Invalid question id",
+            });
+        }
+
+        const question = await Question.findById(questionId);
+
+        if (!question) {
+            return res.status(404).json({
+                success: false,
+                message: "Question not found",
+            });
+        }
+
+        // Generate Prompt
+        const prompt = explainAnswerPrompt(
+            question.question,
+            question.options,
+            question.answer
+        );
+
+        const aiResponse = await AI(prompt);
+
+        // Remove Markdown if Gemini adds it
+        const cleanedResponse = aiResponse
+            .replace(/```json/g, "")
+            .replace(/```/g, "")
+            .trim();
+
+        let parsedResponse;
+
+        // Parse JSON
+        try {
+            parsedResponse = JSON.parse(cleanedResponse);
+        } catch (error) {
+            return res.status(500).json({
+                success: false,
+                message: "AI returned invalid JSON",
+            });
+        }
+
+        // Validate Response Structure
+        if (
+            !parsedResponse.question ||
+            !parsedResponse.correctAnswer ||
+            !parsedResponse.explanation
+        ) {
+            return res.status(500).json({
+                success: false,
+                message: "Invalid AI response structure",
+            });
+        }
+
+        return res.status(200).json({
+            success: true,
+            message: "Question explained successfully",
+            question: parsedResponse.question,
+            correctAnswer: parsedResponse.correctAnswer,
+            explanation: parsedResponse.explanation,
         });
     } catch (error) {
         console.error(error);

@@ -21,7 +21,8 @@ import {
     getSpecificQuestion,
     updateSpecificQuestion,
     createMultipleQuestions,
-    generateAIQuestions
+    generateAIQuestions, 
+    explainQuestionAI
 } from '../controllers/question.controllers.js';
 
 const router = express.Router();
@@ -57,6 +58,7 @@ router.route('/:quizId/questions/:questionId')
     .put(verifyToken, isAdmin, updateSpecificQuestion)
     .delete(verifyToken, isAdmin, deleteSpecificQuestion)
 
-    router.post(`/:quizId/questions/generate-questions`,verifyToken, isAdmin, generateAIQuestions)
+router.post(`/:quizId/questions/generate-questions`, verifyToken, isAdmin, generateAIQuestions)
+router.post(`/:quizId/questions/:questionId/explain-question`, verifyToken, explainQuestionAI)
 
 export default router
