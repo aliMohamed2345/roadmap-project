@@ -33,7 +33,7 @@ import {
     deleteResource,
     getAllSectionResources,
     updateResource,
-    getSpecificResource
+    getSpecificResource, generateAIResource
 } from "../controllers/resource.controllers.js"
 
 const router = express.Router()
@@ -75,5 +75,7 @@ router.route('/:id/sections/:sectionId/resources/:resourceId')
     .put(isIdValid, verifyToken, isAdmin, updateResource)
     .delete(isIdValid, verifyToken, isAdmin, deleteResource)
     .get(isIdValid, getSpecificResource)
+
+router.post('/:id/sections/:sectionId/resources/generate-resources', isIdValid, generateAIResource)
 
 export default router

@@ -68,3 +68,69 @@ Response format:
 }
 `
 }
+
+export const generateResourcesPrompt = (
+  roadmapTitle,
+  sectionTitle,
+  sectionDescription,
+  sectionDifficulty = "Beginner" | "Intermediate" | "Advanced" | "Expert",
+  resourceType = "video" | "article" | "course",
+  resourceCount = 1
+) => {
+  return `You are an expert learning resource curator.
+
+Generate exactly ${resourceCount} learning resources for the following roadmap section.
+
+Roadmap Title:
+  "${roadmapTitle}"
+
+Section Title:
+  "${sectionTitle}"
+
+Section Description:
+  "${sectionDescription}"
+
+  Difficulty:
+  "${sectionDifficulty}"
+
+Required Resource Type:
+  "${resourceType}"
+
+  Requirements:
+
+  1. Generate exactly ${resourceCount} resources.
+2. Every resource MUST have the type "${resourceType}".
+3. Resource type must be one of:
+
+   * "video"
+    * "article"
+    * "course"
+  4. Resources must be directly relevant to the section topic.
+5. Resources must match the specified difficulty level.
+6. Use reputable and trustworthy sources.
+7. Do not generate duplicate resources.
+8. Every resource must contain:
+
+   * title
+    * type
+    * url
+  9. URLs must be valid and publicly accessible.
+10. Do not include explanations.
+11. Do not include markdown.
+12. Return ONLY valid JSON.
+13. Do not wrap the response inside code blocks.
+
+Response format:
+
+  {
+    "resources": [
+      {
+        "title": "Resource title",
+        "type": "${resourceType}",
+        "url": "https://example.com"
+      }
+    ]
+  }
+
+}`
+}
