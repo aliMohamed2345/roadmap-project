@@ -15,6 +15,7 @@ import {
     createAchievement,
     uploadAchievementImage,
     deleteAchievementImage,
+    createMultipleAchievement
 } from '../controllers/achievements.controller.js';
 
 
@@ -23,6 +24,8 @@ const router = Router();
 router.route('/')
     .get(verifyToken, getAllAchievements)
     .post(verifyToken, isAdmin, createAchievement);
+
+router.post('/bulk', verifyToken, isAdmin, createMultipleAchievement)
 
 router.route('/:id')
     .get(isIdValid, verifyToken, getAchievementById)
