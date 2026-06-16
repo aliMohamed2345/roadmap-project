@@ -226,6 +226,10 @@ export const createRoadmap = async (req, res) => {
         const { isValid, message } = validateRoadmapData(title, description, tags)
         if (!isValid) return res.status(400).json({ success: false, message })
 
+        const existedRoadmap = await Roadmap.findOne({ title });
+        
+        if (existedRoadmap) return res.status(400).json({ success: false, message: "An roadmap with the same title already exists" })
+
         const roadmap = await Roadmap.create({ title, description, tags })
 
         return res.status(201).json({ success: true, message: "Roadmap created successfully", roadmap });

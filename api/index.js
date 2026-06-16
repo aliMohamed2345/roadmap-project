@@ -16,6 +16,7 @@ import quizRoutes from '../routes/quiz.routes.js';
 import roadmapRoutes from '../routes/roadmap.routes.js';
 import projectRoutes from '../routes/project.routes.js';
 import aiChatBotRoutes from '../routes/chatbot.routes.js'
+import achievementsRoutes from '../routes/achievements.routes.js'
 import { checkApiKey } from '../middleware/middlewares.js';
 // Error handlers
 import { globalErrorHandler, notFoundHandler } from '../lib/errorHandlers.js';
@@ -57,6 +58,7 @@ app.use('/api/v1/quiz', checkApiKey, quizRoutes);
 app.use('/api/v1/roadmap', checkApiKey, roadmapRoutes);
 app.use('/api/v1/project', checkApiKey, projectRoutes)
 app.use('/api/v1/chatbot', checkApiKey, aiChatBotRoutes)
+app.use('/api/v1/achievement', checkApiKey, achievementsRoutes)
 
 app.get('/', (req, res) => {
     res.status(200).json({ success: true, message: 'Server is running' });

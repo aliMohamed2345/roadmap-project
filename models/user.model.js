@@ -31,7 +31,8 @@ const userSchema = mongoose.Schema({
     },
     bio: {
         type: String,
-        default: "No Bio Yet "
+        default: "No Bio Yet ",
+        maxlength: [300,'Bio cannot be longer than 300 characters'],
     },
     progressData: {
         roadmap: [{
@@ -88,7 +89,19 @@ const userSchema = mongoose.Schema({
                 default: Date.now
             }
         }]
-    }
+    },
+    achievements: [{
+        achievement: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "Achievement",
+            required: true
+        },
+         earnedAt: {     
+            type: Date,
+            default: Date.now
+        },
+
+    }]
 }, { timestamps: true });
 
 const User = mongoose.model("User", userSchema);
