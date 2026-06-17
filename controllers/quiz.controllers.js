@@ -14,6 +14,7 @@ import {
 } from "../utils/PDFBuilder.js";
 import { Parser } from "json2csv";
 import PDFDocument from 'pdfkit'
+import checkAndGrantAchievements from '../utils/checkAndGrantAchievements.js'
 /**
  * @swagger
  * /api/v1/quiz:
@@ -245,23 +246,56 @@ export const submitAnswers = async (req, res) => {
 
         const wrongAnswers = totalQuestions - correctAnswers;
         const percentage = parseFloat(((correctAnswers / totalQuestions) * 100).toFixed(2));
-        //get grade and status
-        const { grade, status } = getGrade(percentage)
+        const { grade, status } = getGrade(percentage);
 
-        // Save progress in user
-        const progressData = {
-            quiz: quizId,
-            percentage,
-            totalQuestions,
-            correctAnswers,
-            wrongAnswers,
-            grade,
-            status,
-        };
+        // ── Save progress — fetch user first to preserve startedAt ────
+        const user = await User.findById(userId);
+        if (!user) return res.status(404).json({ success: false, message: "User not found." });
 
-        await User.findByIdAndUpdate(userId, {
-            $push: { "progressData.quiz": progressData }
-        });
+        const existingEntry = user.progressData.quiz.find(
+            q => q.quiz.toString() === quizId
+        );
+
+        if (existingEntry) {
+            // Update existing entry, keep startedAt intact
+            existingEntry.percentage = percentage;
+            existingEntry.totalQuestions = totalQuestions;
+            existingEntry.correctAnswers = correctAnswers;
+            existingEntry.wrongAnswers = wrongAnswers;
+            existingEntry.grade = grade;
+            existingEntry.status = status;
+            existingEntry.createdAt = new Date();
+        } else {
+            // No entry yet (user skipped GET questions) — push fresh
+            user.progressData.quiz.push({
+                quiz: quizId,
+                percentage,
+                totalQuestions,
+                correctAnswers,
+                wrongAnswers,
+                grade,
+                status,
+                startedAt: new Date(), // fallback — time-based achievements won't fire accurately
+                createdAt: new Date(),
+            });
+        }
+
+        await user.save();
+        // ─────────────────────────────────────────────────────────────
+
+        // ── Check & grant achievements ────────────────────────────────
+        const newAchievements = await checkAndGrantAchievements(
+            user,
+            "quiz_submit",
+            {
+                quizId,
+                totalQuestions,
+                correctAnswers,
+                wrongAnswers,
+                percentage,
+            }
+        );
+        // ─────────────────────────────────────────────────────────────
 
         return res.status(200).json({
             success: true,
@@ -277,6 +311,13 @@ export const submitAnswers = async (req, res) => {
                 status,
                 answerDetails,
             },
+            ...(newAchievements.length > 0 && {
+                newAchievements: newAchievements.map(a => ({
+                    title: a.title,
+                    description: a.description,
+                    image: a.image,
+                }))
+            })
         });
 
     } catch (error) {
@@ -284,6 +325,7 @@ export const submitAnswers = async (req, res) => {
         return res.status(500).json({ success: false, message: error.message });
     }
 };
+
 
 /**
  * @swagger
@@ -307,16 +349,13 @@ export const restartQuiz = async (req, res) => {
         const { id: userId } = req.user;
         const { quizId } = req.params;
 
-        // Validate quizId
-        if (!quizId) {
+        if (!quizId)
             return res.status(400).json({ success: false, message: "Quiz ID is required." });
-        }
 
-        // Find user
         const user = await User.findById(userId);
         if (!user) return res.status(404).json({ success: false, message: "User not found." });
 
-        // Remove that quiz progress
+        // Remove quiz progress — also clears startedAt so next attempt gets a fresh timer
         user.progressData.quiz = user.progressData.quiz.filter(
             q => q.quiz.toString() !== quizId
         );
@@ -333,6 +372,7 @@ export const restartQuiz = async (req, res) => {
         return res.status(500).json({ success: false, message: error.message });
     }
 };
+
 
 /**
  * @swagger

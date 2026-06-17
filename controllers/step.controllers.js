@@ -200,6 +200,9 @@ export const toggleStep = async (req, res) => {
         step.isCompleted = !step.isCompleted;
         await project.save();
 
+        // ── Update user progress & check achievements (complete only) ─
+        let newAchievements = [];
+
         if (step.isCompleted) {
             const user = await User.findById(userId);
 
@@ -208,7 +211,6 @@ export const toggleStep = async (req, res) => {
             );
 
             if (!existingProject) {
-                // Create new project progress
                 user.progressData.project.push({
                     project: projectId,
                     completedSteps: [stepId],
@@ -221,18 +223,27 @@ export const toggleStep = async (req, res) => {
 
                 if (!alreadyCompleted) {
                     existingProject.completedSteps.push(stepId);
-                    existingProject.completedCount =
-                        existingProject.completedSteps.length;
+                    existingProject.completedCount = existingProject.completedSteps.length;
                 }
             }
 
             await user.save();
+
+            newAchievements = await checkAndGrantAchievements(user, "step_complete");
         }
+        // ─────────────────────────────────────────────────────────────
 
         return res.status(200).json({
             success: true,
             message: "Step toggled successfully",
             step,
+            ...(newAchievements.length > 0 && {
+                newAchievements: newAchievements.map(a => ({
+                    title: a.title,
+                    description: a.description,
+                    image: a.image,
+                }))
+            })
         });
 
     } catch (error) {
@@ -240,6 +251,7 @@ export const toggleStep = async (req, res) => {
         return res.status(500).json({ success: false, message: error.message });
     }
 };
+
 
 /**
  * @swagger

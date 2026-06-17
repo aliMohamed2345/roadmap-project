@@ -90,6 +90,26 @@ export const getAllQuestionsFromQuiz = async (req, res) => {
             });
         }
 
+        if (req.user) {
+            const user = await User.findById(req.user.id);
+            if (user) {
+                const existingEntry = user.progressData.quiz.find(
+                    q => q.quiz.toString() === quizId
+                );
+
+                if (!existingEntry) {
+                    user.progressData.quiz.push({
+                        quiz: quizId,
+                        startedAt: new Date()
+                    });
+                    await user.save();
+                } else if (!existingEntry.startedAt) {
+                    existingEntry.startedAt = new Date();
+                    await user.save();
+                }
+            }
+        }
+
         const filter = {
             quizId: new mongoose.Types.ObjectId(quizId)
         };

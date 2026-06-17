@@ -262,26 +262,20 @@ export const toggleCompletionSection = async (req, res) => {
         const { sectionId } = req.params;
         const userId = req.user.id;
 
-        //  Validate section exists
         const section = await Section.findById(sectionId);
-        if (!section) {
+        if (!section)
             return res.status(404).json({ success: false, message: "Section not found" });
-        }
 
-        //  Validate roadmap exists
         const roadmap = await Roadmap.findById(section.roadmapId).populate('sections');
-        if (!roadmap) {
+        if (!roadmap)
             return res.status(404).json({ success: false, message: "Roadmap not found" });
-        }
 
         const user = await User.findById(userId);
 
-        // Find user's progress for this roadmap
         let progress = user.progressData.roadmap.find(e =>
             e.roadmap.toString() === roadmap._id.toString()
         );
 
-        // If user has no progress entry, create it
         if (!progress) {
             progress = {
                 roadmap: roadmap._id,
@@ -291,23 +285,30 @@ export const toggleCompletionSection = async (req, res) => {
             user.progressData.roadmap.push(progress);
         }
 
-        // Toggle completion
         const isAlreadyCompleted = progress.completedSections.some(
             id => id.toString() === sectionId.toString()
         );
 
         if (isAlreadyCompleted) {
-            // Remove section from completed list
             progress.completedSections = progress.completedSections.filter(
                 id => id.toString() !== sectionId.toString()
             );
         } else {
-            // Add section to completed list
             progress.completedSections.push(sectionId);
         }
 
-        // 7. Save user progress
         await user.save();
+
+        // ── Check & grant achievements (only when marking complete) ───
+        let newAchievements = [];
+        if (!isAlreadyCompleted) {
+            newAchievements = await checkAndGrantAchievements(
+                user,
+                "section_complete",
+                { roadmapId: roadmap._id }
+            );
+        }
+        // ─────────────────────────────────────────────────────────────
 
         return res.status(200).json({
             success: true,
@@ -318,7 +319,14 @@ export const toggleCompletionSection = async (req, res) => {
                 completed: progress.completedSections.length,
                 total: progress.numberOfAllSections,
                 roadmapId: roadmap._id
-            }
+            },
+            ...(newAchievements.length > 0 && {
+                newAchievements: newAchievements.map(a => ({
+                    title: a.title,
+                    description: a.description,
+                    image: a.image,
+                }))
+            })
         });
 
     } catch (error) {
