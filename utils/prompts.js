@@ -135,7 +135,6 @@ Response format:
 }`
 }
 
-
 export const aiChatBotPrompt = () => {
   return `
 You are an expert learning mentor and roadmap assistant.
@@ -204,6 +203,75 @@ Response:
 
 {
   "message": "Node.js is a JavaScript runtime environment that allows you to run JavaScript outside the browser. It is commonly used to build backend applications, APIs, and real-time systems like chat apps."
+}
+`;
+};
+
+export const generateProjectInspectionPrompt = (project, zipContext) => {
+  const { fileTree, combinedText, totalEntries, readableFiles, skippedFiles, truncated } = zipContext;
+
+  const stepsList = project.steps.length
+    ? project.steps
+      .map((step, i) => `${i + 1}. "${step.title}" — ${step.description}`)
+      .join("\n")
+    : "No specific steps/requirements were defined for this project.";
+
+  return `
+You are a senior software engineer acting as an automated code reviewer for a learning platform.
+
+A student submitted their source code as a zip file for the project described below. Your job is to inspect the actual code and decide, section by section, whether the student satisfied each requirement, then give an overall rating.
+
+====================
+PROJECT DETAILS
+====================
+Title: "${project.title}"
+Description: "${project.description}"
+Level: "${project.level}"
+Tags: ${project.tags?.join(", ") || "none"}
+
+====================
+REQUIREMENTS / STEPS TO CHECK
+====================
+${stepsList}
+
+====================
+SUBMITTED FILE TREE (${totalEntries} files total, ${readableFiles} inspected as text, ${skippedFiles} skipped as binary/oversized${truncated ? ", content truncated due to size" : ""})
+====================
+${fileTree.join("\n")}
+
+====================
+SUBMITTED FILE CONTENTS
+====================
+${combinedText || "(No readable text/source content could be extracted from the zip.)"}
+
+====================
+RULES
+====================
+1. Base your review strictly on the actual code shown above. Do not assume code exists if you cannot see it.
+2. Go through each requirement/step listed above and judge it independently.
+3. For each step, set "status" to exactly one of: "Completed", "Partial", "Missing".
+4. Be specific in comments: reference real file names, functions, or patterns you saw (or didn't see).
+5. If something required was not implemented, say clearly what should have been done.
+6. "rating" is a single overall score from 0 to 100 reflecting how complete and correct the submission is relative to the requirements.
+7. If no readable content was extracted, give a low rating and explain that no inspectable source code was found.
+8. Do not include markdown, headings, or code blocks anywhere in the output.
+9. Return ONLY valid JSON, with no text outside the JSON object.
+
+====================
+OUTPUT FORMAT (STRICT)
+====================
+{
+  "rating": 0,
+  "summary": "2-4 sentence overall verdict on the submission",
+  "stepsReview": [
+    {
+      "stepTitle": "Step title exactly as given above",
+      "status": "Completed",
+      "comment": "Specific evidence-based comment, and what should have been done if not fully completed"
+    }
+  ],
+  "strengths": ["Specific strength observed in the code"],
+  "improvements": ["Specific, actionable improvement the student should make"]
 }
 `;
 };

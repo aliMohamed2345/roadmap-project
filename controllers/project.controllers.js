@@ -14,6 +14,10 @@ import {
     drawRoundedRect
 } from '../utils/PDFBuilder.js'
 import mongoose from "mongoose";
+import AI from "../lib/ai.js";
+import { extractTextFromZip } from "../utils/zipInspector.js";
+import { generateProjectInspectionPrompt } from "../utils/prompts.js";
+import { getGrade } from "../utils/getGrade.js";
 /**
  * @swagger
  * /api/v1/projects:
@@ -389,7 +393,6 @@ export const exportProjectToCSV = async (req, res) => {
     }
 };
 
-
 /**
  * @swagger
  * /api/v1/project/{projectId}/export/pdf:
@@ -634,8 +637,6 @@ export const exportProjectToPDF = async (req, res) => {
     }
 };
 
-
-
 /**
  * @swagger
  * /api/v1/project/{projectId}/export/json:
@@ -702,7 +703,6 @@ export const exportProjectToJSON = async (req, res) => {
         return res.status(500).json({ success: false, message: error.message });
     }
 };
-
 
 /**
  * @swagger
@@ -794,3 +794,128 @@ export const getRecommendedProjects = async (req, res) => {
         return res.status(500).json({ success: false, message: error.message })
     }
 }
+
+/**
+ * @swagger
+ * /api/v1/project/{projectId}/inspect:
+ *   post:
+ *     summary: Submit a project's source code (.zip) for AI inspection
+ *     description: |
+ *       Accepts a zip file containing a student's project source code, extracts
+ *       its readable text/source files, sends them to Gemini together with the
+ *       project's title/description/steps, and returns a structured AI review:
+ *       an overall rating + grade, a verdict per step/requirement, strengths,
+ *       and improvements.
+ *     tags: [Projects]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: projectId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             required: [sourceZip]
+ *             properties:
+ *               sourceZip:
+ *                 type: string
+ *                 format: binary
+ *     responses:
+ *       200:
+ *         description: AI inspection report generated successfully
+ *       400:
+ *         description: Missing/invalid zip file, or no readable content found
+ *       404:
+ *         description: Project not found
+ *       500:
+ *         description: Server error or AI failure
+ */
+export const inspectProjectSubmission = async (req, res) => {
+    try {
+        const { projectId } = req.params;
+
+        if (!mongoose.Types.ObjectId.isValid(projectId)) {
+            return res.status(400).json({ success: false, message: "Invalid Id" });
+        }
+
+        if (!req.file) {
+            return res.status(400).json({
+                success: false,
+                message: "No zip file uploaded. Attach it under the 'sourceZip' field.",
+            });
+        }
+
+        const project = await Project.findById(projectId);
+        if (!project) {
+            return res.status(404).json({ success: false, message: "Project not found" });
+        }
+
+        let zipContext;
+        try {
+            zipContext = extractTextFromZip(req.file.buffer);
+        } catch (error) {
+            return res.status(400).json({
+                success: false,
+                message: `Could not read the uploaded zip file: ${error.message}`,
+            });
+        }
+
+        if (zipContext.readableFiles === 0) {
+            return res.status(400).json({
+                success: false,
+                message: "No readable source/text files were found inside the zip.",
+            });
+        }
+
+        const prompt = generateProjectInspectionPrompt(project, zipContext);
+        const aiResponse = await AI(prompt);
+
+        if (!aiResponse) {
+            return res.status(500).json({ success: false, message: "AI returned empty response" });
+        }
+
+        const cleanedResponse = aiResponse
+            .replace(/```json/g, "")
+            .replace(/```/g, "")
+            .trim();
+
+        let report;
+        try {
+            report = JSON.parse(cleanedResponse);
+        } catch (error) {
+            return res.status(500).json({ success: false, message: "AI returned invalid JSON" });
+        }
+
+        const rating = Number(report.rating) || 0;
+        const { grade, status } = getGrade(rating);
+
+        return res.status(200).json({
+            success: true,
+            message: "Project inspected successfully",
+            report: {
+                rating,
+                grade,
+                status,
+                summary: report.summary,
+                stepsReview: report.stepsReview || [],
+                strengths: report.strengths || [],
+                improvements: report.improvements || [],
+            },
+            scannedFiles: {
+                total: zipContext.totalEntries,
+                inspected: zipContext.readableFiles,
+                skipped: zipContext.skippedFiles,
+                truncated: zipContext.truncated,
+            },
+        });
+    } catch (error) {
+        console.log(error.message);
+        return res.status(500).json({ success: false, message: error.message });
+    }
+};

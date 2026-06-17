@@ -97,3 +97,28 @@ const fileFilter = (req, file, cb) => {
 };
 
 export const upload = multer({ storage, fileFilter });
+
+
+// File filter for project submission zip files
+const zipFileFilter = (req, file, cb) => {
+    const allowedMimeTypes = [
+        "application/zip",
+        "application/x-zip-compressed",
+        "application/octet-stream", // some browsers/OSes send this for .zip
+    ];
+    const isZipMime = allowedMimeTypes.includes(file.mimetype);
+    const isZipExtension = file.originalname?.toLowerCase().endsWith(".zip");
+
+    if (isZipMime && isZipExtension) cb(null, true);
+    else cb(new Error("Only .zip files are allowed!"), false);
+};
+
+// Memory storage, capped at 20MB. Note: if this API is deployed on Vercel's
+// Node.js serverless functions, the platform itself enforces a ~4.5MB request
+// body limit regardless of this setting, so very large project zips will be
+// rejected by the platform before they even reach this middleware.
+export const uploadZip = multer({
+    storage,
+    fileFilter: zipFileFilter,
+    limits: { fileSize: 20 * 1024 * 1024 },
+});

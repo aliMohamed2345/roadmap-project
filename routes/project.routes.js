@@ -8,7 +8,8 @@ import {
     exportProjectToCSV,
     exportProjectToJSON,
     exportProjectToPDF,
-    getRecommendedProjects
+    getRecommendedProjects,
+    inspectProjectSubmission
 } from "../controllers/project.controllers.js";
 import {
     getAllSteps,
@@ -17,7 +18,7 @@ import {
     toggleStep,
     updateStep
 } from "../controllers/step.controllers.js";
-import { verifyToken, isAdmin } from "../middleware/middlewares.js";
+import { verifyToken, isAdmin, uploadZip } from "../middleware/middlewares.js";
 
 const router = Router();
 
@@ -32,6 +33,12 @@ router.route("/:projectId")
 
 router.get("/:projectId/recommended", getRecommendedProjects)
 
+router.post(
+    "/:projectId/inspect",
+    verifyToken,
+    uploadZip.single("sourceZip"),
+    inspectProjectSubmission
+)
 
 router.get('/:projectId/export/json', exportProjectToJSON)
 router.get('/:projectId/export/pdf', exportProjectToPDF)
