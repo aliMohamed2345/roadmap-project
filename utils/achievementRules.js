@@ -48,7 +48,7 @@ const ACHIEVEMENT_RULES = [
     },
 
     // ─────────────────────────────────────────────
-    // SECTION (MILESTONE) COUNT
+    // SECTION  COUNT
     // ─────────────────────────────────────────────
     {
         title: "Baby Steps",
@@ -204,6 +204,36 @@ const ACHIEVEMENT_RULES = [
             );
             return finished.length >= 10;
         }
+    },
+
+    // ─────────────────────────────────────────────
+    // LOGIN STREAKS
+    // ─────────────────────────────────────────────
+
+    {
+        title: "Routine",
+        triggers: ["streak_update"],
+        condition: (user) => user.streakData.currentStreak >= 3
+    },
+    {
+        title: "Discipline",
+        triggers: ["streak_update"],
+        condition: (user) => user.streakData.currentStreak >= 7
+    },
+    {
+        title: "Dedication",
+        triggers: ["streak_update"],
+        condition: (user) => user.streakData.currentStreak >= 30
+    },
+    {
+        title: "Devotion",
+        triggers: ["streak_update"],
+        condition: (user) => user.streakData.currentStreak >= 100
+    },
+    {
+        title: "Relentless",
+        triggers: ["streak_update"],
+        condition: (user) => user.streakData.currentStreak >= 365
     },
 ];
 

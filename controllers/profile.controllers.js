@@ -1,6 +1,8 @@
 import cloudinary from "../lib/cloudinary.js";
 import { validateChangeProfileCredentials } from "../utils/validateUserCredentials.js"
 import User from "../models/user.model.js";
+import updateLoginStreak from "../utils/updateUserLoginStreak.js";
+import checkAndGrantAchievements from "../utils/checkAndGrantAchievements.js";
 
 /**
  * @swagger
@@ -32,9 +34,33 @@ export const Profile = async (req, res) => {
 
         const user = await User.findById(userId).select('-password -__v').populate({
             path: 'progressData.quiz.quiz', // path to populate
-            // select: 'title description questions' // pick only the fields you want
         });
-        return res.status(200).json({ success: true, user })
+        if (!user) return res.status(404).json({ success: false, message: "User profile not found" })
+
+        //streak check
+        const streakChanged = updateLoginStreak(user)
+        let newAchievements = [];
+
+        if (streakChanged) {
+            await user.save()
+            newAchievements = await checkAndGrantAchievements(user, "streak_update");
+        }
+
+        return res.status(200).json({
+            success: true,
+            user,
+            streak: {
+                current: user.streakData.currentStreak,
+                longest: user.streakData.longestStreak
+            },
+            ...(newAchievements.length > 0 && {
+                newAchievements: newAchievements.map(a => ({
+                    title: a.title,
+                    description: a.description,
+                    image: a.image
+                }))
+            })
+        });
 
     } catch (error) {
         console.log(error.message)

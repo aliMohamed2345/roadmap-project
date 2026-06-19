@@ -105,7 +105,21 @@ const userSchema = mongoose.Schema({
             default: Date.now
         },
 
-    }]
+    }],
+    streakData: {
+        currentStreak: {
+            type: Number,
+            default: 0
+        },
+        longestStreak: {
+            type: Number,
+            default: 0
+        },
+        lastLoginDate: {
+            type: Date,
+            default: null
+        }
+    }
 }, { timestamps: true });
 
 const User = mongoose.model("User", userSchema);

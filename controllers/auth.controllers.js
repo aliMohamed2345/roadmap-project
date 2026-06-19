@@ -3,6 +3,8 @@ import User from "../models/user.model.js"
 import bcrypt from "bcryptjs"
 import env from 'dotenv'
 import generateToken from "../utils/generateToken.js"
+import updateLoginStreak from '../utils/updateUserLoginStreak.js'
+import checkAndGrantAchievements from '../utils/checkAndGrantAchievements.js'
 env.config();
 
 /**
@@ -57,13 +59,35 @@ export const Login = async (req, res) => {
         const isPasswordMatch = await bcrypt.compare(password, user.password)
         if (!isPasswordMatch) return res.status(400).json({ success: false, message: "Incorrect password" })
 
+        //Streak update 
+        const streakChanged = updateLoginStreak(user)
+        if (streakChanged) {
+            await user.save();
+        }
+
+        const newAchievements = streakChanged ?
+            await checkAndGrantAchievements(user, "streak_update") :
+            []
+
+
         //create and assign token
         generateToken(user._id, user.isAdmin, res)
 
         return res.status(200).json({
             success: true,
-            message: "Login successfully",
-            user: { id: user._id, username: user.username, email: user.email, isAdmin: user.isAdmin, imageURL: user.imageURL || defaultImage }
+            message: "Login successful",
+            user: { id: user._id, username: user.username, email: user.email, isAdmin: user.isAdmin, imageURL: user.imageURL },
+            streak: {
+                current: user.streakData.currentStreak,
+                longest: user.streakData.longestStreak
+            },
+            ...(newAchievements.length > 0 && {
+                newAchievements: newAchievements.map(a => ({
+                    title: a.title,
+                    description: a.description,
+                    image: a.image
+                }))
+            })
         })
 
     } catch (error) {
@@ -164,8 +188,8 @@ export const Logout = (req, res) => {
     try {
         res.clearCookie('token', {
             httpOnly: true,
-            sameSite: "none",  
-            secure: true,      
+            sameSite: "none",
+            secure: true,
         })
         return res.status(200).json({ success: true, message: "Logout successfully" })
     } catch (error) {
