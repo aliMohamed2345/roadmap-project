@@ -1,6 +1,7 @@
 import { validateCreationQuestionData, validateQuestionData, validateQuestionQueryString } from "../utils/validateQuestionData.js";
 import Question from "../models/question.model.js";
 import Quiz from "../models/quiz.model.js";
+import User from '../models/user.model.js'
 import mongoose from 'mongoose'
 import AI from "../lib/ai.js";
 import { explainAnswerPrompt, generateQuestionsPrompt } from "../utils/prompts.js";
