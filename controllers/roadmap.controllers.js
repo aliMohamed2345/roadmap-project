@@ -18,6 +18,8 @@ import {
     measureCardHeight,
     roundedRect
 } from '../utils/PDFBuilder.js'
+import cloudinary from '../lib/cloudinary.js'
+
 /**
  * @swagger
  * /api/v1/roadmap:
@@ -227,7 +229,7 @@ export const createRoadmap = async (req, res) => {
         if (!isValid) return res.status(400).json({ success: false, message })
 
         const existedRoadmap = await Roadmap.findOne({ title });
-        
+
         if (existedRoadmap) return res.status(400).json({ success: false, message: "An roadmap with the same title already exists" })
 
         const roadmap = await Roadmap.create({ title, description, tags })
@@ -650,6 +652,170 @@ export const getRecommendedRoadmaps = async (req, res) => {
             roadmapNumber: recommendedRoadmaps.length,
             recommendedRoadmaps
         })
+
+    } catch (error) {
+        console.error(error.message)
+        return res.status(500).json({ success: false, message: error.message })
+    }
+}
+
+/**
+ * @swagger
+ * /api/v1/roadmap/{id}/upload-image:
+ *   put:
+ *     summary: Upload or update a roadmap's cover image
+ *     description: Uploads an image to Cloudinary and saves the URL on the roadmap. Requires admin privileges.
+ *     tags: [Roadmaps]
+ *     security:
+ *       - bearerAuth: []
+ *       - apiKeyAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: The ID of the roadmap to upload an image for
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               file:
+ *                 type: string
+ *                 format: binary
+ *                 description: The image file to upload
+ *     responses:
+ *       200:
+ *         description: Image uploaded successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: Image uploaded successfully
+ *                 imageURL:
+ *                   type: string
+ *                   example: https://res.cloudinary.com/demo/image/upload/v123/roadmap_images/abc123.png
+ *       400:
+ *         description: No file uploaded or invalid roadmap ID format
+ *       401:
+ *         description: Unauthorized - missing or invalid token / API key
+ *       403:
+ *         description: Forbidden - admin access required
+ *       404:
+ *         description: Roadmap not found
+ *       500:
+ *         description: Internal server error
+ */
+export const uploadRoadmapImage = async (req, res) => {
+    try {
+        const { id: roadmapId } = req.params
+        if (!req.file) {
+            return res.status(400).json({ success: false, message: "No file uploaded" });
+        }
+
+        // Wrap upload_stream in a Promise
+        const uploadResult = await new Promise((resolve, reject) => {
+            const stream = cloudinary.uploader.upload_stream(
+                { folder: "roadmap_images" },
+                (error, result) => {
+                    if (error) return reject(error);
+                    resolve(result);
+                }
+            );
+            stream.end(req.file.buffer);
+        });
+
+        // Save Cloudinary URL to user
+        const roadmap = await Roadmap.findById(roadmapId);
+        roadmap.image = uploadResult.secure_url;
+        await roadmap.save();
+
+        return res.status(200).json({ success: true, message: "Image uploaded successfully", imageURL: uploadResult.secure_url });
+    } catch (error) {
+        console.error(error.message)
+        return res.status(500).json({ success: false, message: error.message })
+    }
+}
+
+/**
+ * @swagger
+ * /api/v1/roadmap/{id}/remove-image:
+ *   delete:
+ *     summary: Remove a roadmap's cover image
+ *     description: Deletes the roadmap's image from Cloudinary and clears the image field. Requires admin privileges.
+ *     tags: [Roadmaps]
+ *     security:
+ *       - bearerAuth: []
+ *       - apiKeyAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: The ID of the roadmap to remove the image from
+ *     responses:
+ *       200:
+ *         description: Roadmap image deleted successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: roadmap image deleted successfully
+ *       400:
+ *         description: Invalid roadmap ID format
+ *       401:
+ *         description: Unauthorized - missing or invalid token / API key
+ *       403:
+ *         description: Forbidden - admin access required
+ *       404:
+ *         description: Roadmap not found or no image exists
+ *       500:
+ *         description: Internal server error
+ */
+export const RemoveRoadmapImage = async (req, res) => {
+    try {
+
+        const { id: roadmapId } = req.params;
+
+        const roadmap = await Roadmap.findById(roadmapId);
+
+        if (!roadmap || !roadmap.image)
+            return res.status(404).json({ success: false, message: "No badge image found" });
+
+        const publicId = roadmap.image
+            .split("/")
+            .slice(-2)
+            .join("/")
+            .split(".")[0];
+
+        await new Promise((resolve, reject) => {
+            cloudinary.uploader.destroy(publicId, (error, result) => {
+                if (error) return reject(error);
+                resolve(result);
+            });
+        });
+
+        roadmap.image = "";
+        await roadmap.save();
+
+        return res.status(200).json({ success: true, message: "roadmap image deleted successfully" });
+
 
     } catch (error) {
         console.error(error.message)

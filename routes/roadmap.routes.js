@@ -9,11 +9,13 @@ import {
     exportRoadmapToJSON,
     exportRoadmapToPDF,
     exportRoadmapToCSV,
-    getRecommendedRoadmaps
+    getRecommendedRoadmaps,
+    RemoveRoadmapImage,
+    uploadRoadmapImage
 } from "../controllers/roadmap.controllers.js";
 
 import {
-
+    upload,
     isAdmin,
     isIdValid,
     verifyToken
@@ -77,5 +79,8 @@ router.route('/:id/sections/:sectionId/resources/:resourceId')
     .get(isIdValid, getSpecificResource)
 
 router.post('/:id/sections/:sectionId/resources/generate-resources', isIdValid, generateAIResource)
+
+router.put("/:id/upload-image", isIdValid, verifyToken, isAdmin, upload.single("image"), uploadRoadmapImage)
+router.delete("/:id/delete-image", isIdValid, verifyToken, isAdmin, RemoveRoadmapImage)
 
 export default router

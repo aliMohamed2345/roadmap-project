@@ -11,6 +11,10 @@ const roadmapSchema = mongoose.Schema({
         required: true,
     },
     tags: [String],
+    image: {
+        type: String,
+        default: `https://res.cloudinary.com/dlfxewfvl/image/upload/v1782040952/default-roadmap-placeholder_fvblrn.png`
+    },
     sections: [{ type: mongoose.Schema.Types.ObjectId, ref: "Section" }]
 
 }, { timestamps: true })

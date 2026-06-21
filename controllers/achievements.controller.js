@@ -369,7 +369,7 @@ export const uploadAchievementImage = async (req, res) => {
         achievement.image = uploadResult.secure_url;
         await achievement.save();
 
-        return res.status(200).json({ success: true, imageURL: uploadResult.secure_url });
+        return res.status(200).json({ success: true, message: "Image uploaded successfully", imageURL: uploadResult.secure_url });
     } catch (error) {
         console.error(error.message);
         return res.status(500).json({ success: false, message: error.message });

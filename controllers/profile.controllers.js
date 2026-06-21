@@ -180,7 +180,7 @@ export const uploadProfileImage = async (req, res) => {
         user.imageURL = uploadResult.secure_url;
         await user.save();
 
-        return res.status(200).json({ success: true, imageURL: uploadResult.secure_url });
+        return res.status(200).json({ success: true, success: `Image uploaded successfully`, imageURL: uploadResult.secure_url });
     } catch (error) {
         console.error(error);
         return res.status(500).json({ success: false, message: error.message });
