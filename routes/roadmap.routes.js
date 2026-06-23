@@ -11,7 +11,9 @@ import {
     exportRoadmapToCSV,
     getRecommendedRoadmaps,
     RemoveRoadmapImage,
-    uploadRoadmapImage
+    uploadRoadmapImage,
+    getRelatedProjectsToRoadmap,
+    getRelatedQuizzesToRoadmap
 } from "../controllers/roadmap.controllers.js";
 
 import {
@@ -82,5 +84,7 @@ router.post('/:id/sections/:sectionId/resources/generate-resources', isIdValid, 
 
 router.put("/:id/upload-image", isIdValid, verifyToken, isAdmin, upload.single("image"), uploadRoadmapImage)
 router.delete("/:id/delete-image", isIdValid, verifyToken, isAdmin, RemoveRoadmapImage)
+router.get("/:id/quizzes", isIdValid, verifyToken, getRelatedQuizzesToRoadmap)
+router.get("/:id/projects", isIdValid, verifyToken, getRelatedProjectsToRoadmap)
 
 export default router

@@ -19,6 +19,10 @@ import {
     roundedRect
 } from '../utils/PDFBuilder.js'
 import cloudinary from '../lib/cloudinary.js'
+import Quiz from '../models/quiz.model.js'
+import Project from '../models/project.model.js'
+import sortByRank from '../utils/sortElementsByRank.js'
+import { validateProjectQueryString } from '../utils/validateProjectData.js'
 
 /**
  * @swagger
@@ -822,3 +826,210 @@ export const RemoveRoadmapImage = async (req, res) => {
         return res.status(500).json({ success: false, message: error.message })
     }
 }
+
+/**
+ * @swagger
+ * /api/v1/roadmap/{id}/quizzes:
+ *   get:
+ *     summary: Get quizzes related to a roadmap by shared tags
+ *     tags: [Roadmaps]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Roadmap ID
+ *       - in: header
+ *         name: x-api-key
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: API key required to access this endpoint
+ *     responses:
+ *       200:
+ *         description: Related quizzes fetched successfully (may be an empty array)
+ *       400:
+ *         description: Invalid roadmap ID
+ *       404:
+ *         description: Roadmap not found
+ *       500:
+ *         description: Internal server error
+ */
+export const getRelatedQuizzesToRoadmap = async (req, res) => {
+    try {
+        const { id: roadmapId } = req.params;
+        const { q = "", page = 1, limit = 5, rank } = req.query;
+
+        const { isValid, message } = validateProjectQueryString(q, +page, +limit, rank);
+        if (!isValid)
+            return res.status(400).json({ success: false, message });
+
+        const quizPerPage = +limit;
+        const currentPage = +page;
+
+        const roadmap = await Roadmap.findById(roadmapId);
+        if (!roadmap) {
+            return res.status(404).json({ success: false, message: "Roadmap not found" });
+        }
+
+        const roadmapTags = roadmap.tags || [];
+
+        if (roadmapTags.length === 0) {
+            return res.status(200).json({
+                success: true,
+                quizzes: [],
+                quizNumber: 0,
+                page: currentPage,
+                limit: quizPerPage,
+                totalPages: 0,
+            });
+        }
+
+        const filter = {
+            $or: [
+                { title: { $regex: q, $options: "i" } },
+                { description: { $regex: q, $options: "i" } },
+            ],
+            tags: { $in: roadmapTags }
+        };
+        if (rank) {
+            filter.rank = { $regex: rank, $options: "i" };
+        }
+
+        const [quizzes, totalDocuments] = await Promise.all([
+            Quiz.find(filter)
+                .skip((currentPage - 1) * quizPerPage)
+                .limit(quizPerPage)
+                .select('-questions -__v -updatedAt'),
+            Quiz.countDocuments(filter),
+        ]);
+
+        if (!quizzes.length)
+            return res.status(404).json({
+                success: false,
+                message: "No related quizzes found for this roadmap",
+            });
+
+        const sortedQuizzes = sortByRank(quizzes, "quiz");
+        const totalPages = Math.ceil(totalDocuments / quizPerPage);
+
+        return res.status(200).json({
+            success: true,
+            quizzes: sortedQuizzes,
+            quizNumber: totalDocuments,
+            page: currentPage,
+            limit: quizPerPage,
+            totalPages,
+        });
+
+    } catch (error) {
+        console.log(error.message);
+        return res.status(500).json({ success: false, message: error.message });
+    }
+};
+
+
+
+
+/**
+ * @swagger
+ * /api/v1/roadmap/{id}/projects:
+ *   get:
+ *     summary: Get projects related to a roadmap by shared tags
+ *     tags: [Roadmaps]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Roadmap ID
+ *       - in: header
+ *         name: x-api-key
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: API key required to access this endpoint
+ *     responses:
+ *       200:
+ *         description: Related projects fetched successfully (may be an empty array)
+ *       400:
+ *         description: Invalid roadmap ID
+ *       404:
+ *         description: Roadmap not found
+ *       500:
+ *         description: Internal server error
+ */
+export const getRelatedProjectsToRoadmap = async (req, res) => {
+    try {
+        const { id: roadmapId } = req.params;
+        const { q = "", page = 1, limit = 5, level } = req.query;
+
+        const { isValid, message } = validateProjectQueryString(q, +page, +limit, level);
+        if (!isValid)
+            return res.status(400).json({ success: false, message });
+
+        const projectPerPage = +limit;
+        const currentPage = +page;
+
+        const roadmap = await Roadmap.findById(roadmapId);
+        if (!roadmap) {
+            return res.status(404).json({ success: false, message: "Roadmap not found" });
+        }
+
+        const roadmapTags = roadmap.tags || [];
+
+        if (roadmapTags.length === 0) {
+            return res.status(200).json({
+                success: true,
+                projects: [],
+                projectNumber: 0,
+                page: currentPage,
+                limit: projectPerPage,
+                totalPages: 0,
+            });
+        }
+
+        const filter = {
+            $or: [
+                { title: { $regex: q, $options: "i" } },
+                { description: { $regex: q, $options: "i" } },
+            ],
+            tags: { $in: roadmapTags }
+        };
+        if (level) {
+            filter.level = { $regex: level, $options: "i" };
+        }
+
+        const [projects, totalDocuments] = await Promise.all([
+            Project.find(filter)
+                .skip((currentPage - 1) * projectPerPage)
+                .limit(projectPerPage)
+                .select('-__v -steps -userId -updatedAt'),
+            Project.countDocuments(filter),
+        ]);
+
+        if (!projects.length)
+            return res.status(404).json({
+                success: false,
+                message: "No related projects found for this roadmap",
+            });
+
+        const sortedProjects = sortByRank(projects, "project");
+        const totalPages = Math.ceil(totalDocuments / projectPerPage);
+
+        return res.status(200).json({
+            success: true,
+            projects: sortedProjects,
+            projectNumber: totalDocuments,
+            page: currentPage,
+            limit: projectPerPage,
+            totalPages,
+        });
+
+    } catch (error) {
+        console.log(error.message);
+        return res.status(500).json({ success: false, message: error.message });
+    }
+};

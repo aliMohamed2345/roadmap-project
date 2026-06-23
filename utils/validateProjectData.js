@@ -84,44 +84,40 @@ export const validateStepsData = (steps) => {
     }
     return { isValid: true, message: "" }
 }
-export const validateProjectQueryString = (q = "", page = 1, limit = 1, level) => {
-    const allowedLevels = ["Beginner", "Intermediate", "Advanced"];
-    if (q) {
-        // Query validation
-        if (typeof q !== "string") {
-            return { isValid: false, message: "Query must be a string." };
-        }
-    }
-    if (page) {
+export const validateProjectQueryString = (q = "", page = 1, limit = 1, rankOrLevel) => {
+    const allowedQuizRanks = ["Beginner", "Intermediate", "Advanced", "Expert", "Master"];
+    const allowedProjectLevels = ["Beginner", "Intermediate", "Advanced"];
 
-        // Page validation
-        if (typeof page !== "number" || page <= 0) {
-            return { isValid: false, message: "Page must be a positive number." };
-        }
+    if (q && typeof q !== "string") {
+        return { isValid: false, message: "Query must be a string." };
     }
 
-    if (limit) {
-        // Limit validation
-        if (typeof limit !== "number") {
-            return { isValid: false, message: "Limit must be a positive number." };
-        }
-        if (limit <= 0 || limit > 30) {
-            return { isValid: false, message: "Limit must be between 1 and 30." };
-        }
+    const pageNum = +(page);
+    if (isNaN(pageNum) || pageNum <= 0) {
+        return { isValid: false, message: "Page must be a positive number." };
     }
-    if (level) {
-        if (typeof level !== "string") {
-            return { isValid: false, message: "Level must be a valid string" };
+
+    const limitNum = +(limit);
+    if (isNaN(limitNum) || limitNum <= 0 || limitNum > 30) {
+        return { isValid: false, message: "Limit must be between 1 and 30." };
+    }
+
+    if (rankOrLevel) {
+        if (typeof rankOrLevel !== "string") {
+            return { isValid: false, message: "Rank/level must be a valid string" };
         }
-        if (!allowedLevels.includes(level)) {
+        const isValidValue = allowedQuizRanks.includes(rankOrLevel) || allowedProjectLevels.includes(rankOrLevel);
+        if (!isValidValue) {
             return {
                 isValid: false,
-                message: `Level must be one of: ${allowedLevels.join(", ")}`,
+                message: `Value must be one of: ${allowedQuizRanks.join(", ")} (quiz) or ${allowedProjectLevels.join(", ")} (project)`,
             };
         }
     }
+
     return { isValid: true, message: "Validation successful." };
-}
+};
+
 export const validateProjectUpdateData = (title, description, level, tags) => {
     const allowedLevels = ["Beginner", "Intermediate", "Advanced"];
     if (title) {
